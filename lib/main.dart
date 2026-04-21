@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:skillbantuin/screens/splash_screen.dart';
-import 'screens/splash_screen.dart';
 
 void main() {
   runApp(const SkillBantuinApp());

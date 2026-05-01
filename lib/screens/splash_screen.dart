@@ -1,6 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import '../services/session_service.dart';
+import 'main_navigation_screen.dart';
 import 'onboarding_screen.dart';
+import 'role_selection_screen.dart';
+import '../widgets/auth_flow_widgets.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -10,69 +15,113 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  final _sessionService = SessionService();
+  final _authService = AuthService();
+
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 2), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-      );
-    });
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    await Future<void>.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+
+    final onboardingSeen = await _sessionService.isOnboardingSeen();
+    final savedSession = await _authService.getSavedSession();
+    if (!mounted) return;
+
+    final Widget targetScreen;
+    if (savedSession != null) {
+      targetScreen = MainNavigationScreen(userRole: savedSession.role);
+    } else if (onboardingSeen) {
+      targetScreen = const RoleSelectionScreen();
+    } else {
+      targetScreen = const OnboardingScreen();
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => targetScreen),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final spacing = authVerticalSpacing(context);
+
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF4A6FFF), Color(0xFF6C8EFF)],
+      body: AuthGradientBackground(
+        child: SafeArea(
+          child: AuthContentContainer(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Spacer(),
+                const AuthBrandMark(size: 108),
+                SizedBox(height: spacing),
+                const Text(
+                  'SkillBantuin',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Temukan bantuan cepat dan kolaborasi kerja yang terasa profesional sejak layar pertama.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.6,
+                    color: Colors.white.withValues(alpha: 0.82),
+                  ),
+                ),
+                SizedBox(height: spacing),
+                const AuthGlassCard(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                      SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          'Menyiapkan pengalaman yang lebih rapi untuk kamu...',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'Responsive UI for client and freelancer journey',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    letterSpacing: 0.2,
+                    color: Colors.white.withValues(alpha: 0.7),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Logo / Ilustrasi
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.handshake_outlined,
-                size: 60,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              'SkillBantuin',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Micro-Volunteering Marketplace',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white70,
-              ),
-            ),
-            const SizedBox(height: 48),
-            const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          ],
         ),
       ),
     );

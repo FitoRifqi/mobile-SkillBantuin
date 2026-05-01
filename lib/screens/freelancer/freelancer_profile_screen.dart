@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+
+import '../../services/auth_service.dart';
 import '../../widgets/profile_section.dart';
+import 'freelancer_earnings_screen.dart';
+import '../role_selection_screen.dart';
 
 class FreelancerProfileScreen extends StatelessWidget {
   const FreelancerProfileScreen({super.key});
+
+  static final AuthService _authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
@@ -48,15 +54,22 @@ class FreelancerProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const FreelancerEarningsScreen(),
+                ),
+              );
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2563EB),
             ),
-            child: const Text('Tarik Dana Sekarang'),
+            child: const Text('Lihat Pendapatan'),
           ),
           const SizedBox(height: 16),
           OutlinedButton(
-            onPressed: () {},
+            onPressed: () => _handleLogout(context),
             style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Logout'),
           ),
@@ -74,7 +87,7 @@ class FreelancerProfileScreen extends StatelessWidget {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withOpacity(0.1),
+              color: const Color(0xFF2563EB).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.person, size: 50, color: Color(0xFF2563EB)),
@@ -105,6 +118,16 @@ class FreelancerProfileScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  static Future<void> _handleLogout(BuildContext context) async {
+    await _authService.logout();
+    if (!context.mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
+      (route) => false,
     );
   }
 }

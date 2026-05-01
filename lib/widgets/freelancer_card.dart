@@ -31,7 +31,7 @@ class FreelancerCard extends StatelessWidget {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withOpacity(0.1),
+              color: const Color(0xFF2563EB).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(25),
             ),
             child: const Icon(Icons.person, color: Color(0xFF2563EB)),

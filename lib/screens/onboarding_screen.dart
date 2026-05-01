@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../services/session_service.dart';
 import 'role_selection_screen.dart';
+import '../widgets/auth_flow_widgets.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -10,6 +12,7 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
+  final SessionService _sessionService = SessionService();
   int _currentPage = 0;
 
   final List<OnboardingData> _onboardingData = [
@@ -37,93 +40,136 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   ];
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final spacing = authVerticalSpacing(context);
+
     return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: _onboardingData.length,
-              onPageChanged: (int page) {
-                setState(() {
-                  _currentPage = page;
-                });
-              },
-              itemBuilder: (context, index) {
-                return OnboardingContent(data: _onboardingData[index]);
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24.0),
+      body: AuthGradientBackground(
+        child: SafeArea(
+          child: AuthContentContainer(
             child: Column(
               children: [
+                const SizedBox(height: 12),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _onboardingData.length,
-                    (index) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: _currentPage == index ? 24 : 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(4),
-                        color: _currentPage == index
-                            ? const Color(0xFF4A6FFF)
-                            : Colors.grey.shade300,
+                  children: [
+                    const AuthBrandMark(size: 56),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'SkillBantuin',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            'Kolaborasi cepat untuk klien dan freelancer',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.76),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    if (_currentPage < _onboardingData.length - 1)
+                      TextButton(
+                        onPressed: _goToRoleSelection,
+                        child: const Text('Lewati'),
+                      ),
+                  ],
+                ),
+                SizedBox(height: spacing),
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: _onboardingData.length,
+                    onPageChanged: (int page) {
+                      setState(() {
+                        _currentPage = page;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      return OnboardingContent(data: _onboardingData[index]);
+                    },
                   ),
                 ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (_currentPage == _onboardingData.length - 1) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const RoleSelectionScreen()),
-                        );
-                      } else {
-                        _pageController.nextPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4A6FFF),
-                    ),
-                    child: Text(
-                      _currentPage == _onboardingData.length - 1
-                          ? 'Get Started'
-                          : 'Next',
-                    ),
+                SizedBox(height: spacing),
+                AuthGlassCard(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          _onboardingData.length,
+                          (index) => AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeOut,
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: _currentPage == index ? 28 : 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(999),
+                              color: _currentPage == index
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.28),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      AuthPrimaryButton(
+                        label: _currentPage == _onboardingData.length - 1
+                            ? 'Mulai Sekarang'
+                            : 'Lanjut',
+                        onPressed: () {
+                          if (_currentPage == _onboardingData.length - 1) {
+                            _goToRoleSelection();
+                            return;
+                          }
+
+                          _pageController.nextPage(
+                            duration: const Duration(milliseconds: 320),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        trailing: Icon(
+                          _currentPage == _onboardingData.length - 1
+                              ? Icons.arrow_forward_rounded
+                              : Icons.chevron_right_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                if (_currentPage < _onboardingData.length - 1)
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const RoleSelectionScreen()),
-                      );
-                    },
-                    child: const Text(
-                      'Skip',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ),
+                const SizedBox(height: 8),
               ],
             ),
           ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Future<void> _goToRoleSelection() async {
+    await _sessionService.markOnboardingSeen();
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
     );
   }
 }
@@ -134,44 +180,81 @@ class OnboardingContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 140,
-            height: 140,
-            decoration: BoxDecoration(
-              color: data.color.withOpacity(0.1),
-              shape: BoxShape.circle,
+    final spacing = authVerticalSpacing(context);
+
+    return Center(
+      child: AuthGlassCard(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 92,
+              height: 92,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.18),
+                ),
+              ),
+              child: Icon(
+                data.icon,
+                size: 42,
+                color: Colors.white,
+              ),
             ),
-            child: Icon(
-              data.icon,
-              size: 64,
-              color: data.color,
+            SizedBox(height: spacing),
+            Text(
+              data.title,
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                height: 1.2,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 48),
-          Text(
-            data.title,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 14),
+            Text(
+              data.description,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.65,
+                color: Colors.white.withValues(alpha: 0.8),
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            data.description,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey.shade600,
-              height: 1.5,
+            const SizedBox(height: 22),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Tampilan dibuat ringan dan nyaman dibaca di layar kecil maupun besar.',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.76),
+                        fontSize: 13,
+                        height: 1.45,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+
+import '../../services/auth_service.dart';
 import '../../widgets/profile_section.dart';
+import '../role_selection_screen.dart';
 
 class ClientProfileScreen extends StatelessWidget {
   const ClientProfileScreen({super.key});
+
+  static final AuthService _authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +47,7 @@ class ClientProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           OutlinedButton(
-            onPressed: () {},
+            onPressed: () => _handleLogout(context),
             style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Logout'),
           ),
@@ -60,7 +65,7 @@ class ClientProfileScreen extends StatelessWidget {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withOpacity(0.1),
+              color: const Color(0xFF2563EB).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -81,6 +86,16 @@ class ClientProfileScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  static Future<void> _handleLogout(BuildContext context) async {
+    await _authService.logout();
+    if (!context.mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
+      (route) => false,
     );
   }
 }

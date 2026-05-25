@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'app_ui.dart';
+import 'auth_flow_widgets.dart';
+
 class ProfileSection extends StatelessWidget {
   final String title;
   final List<String> items;
@@ -14,18 +17,18 @@ class ProfileSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: const TextStyle(
+              color: AuthFlowPalette.textPrimary,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+            ),
           ),
           const SizedBox(height: 12),
           ...items.map(
@@ -37,13 +40,29 @@ class ProfileSection extends StatelessWidget {
                         const Icon(
                           Icons.check_circle,
                           size: 16,
-                          color: Color(0xFF2563EB),
+                          color: Color(0xFF059669),
                         ),
                         const SizedBox(width: 8),
-                        Text(item, style: const TextStyle(fontSize: 14)),
+                        Expanded(
+                          child: Text(
+                            item,
+                            style: const TextStyle(
+                              color: AuthFlowPalette.textSecondary,
+                              fontSize: 14,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
                       ],
                     )
-                  : Text(item, style: const TextStyle(fontSize: 14)),
+                  : Text(
+                      item,
+                      style: const TextStyle(
+                        color: AuthFlowPalette.textSecondary,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
             ),
           ),
         ],

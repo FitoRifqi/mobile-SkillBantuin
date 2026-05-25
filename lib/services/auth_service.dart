@@ -39,7 +39,10 @@ class AuthService {
     await Future<void>.delayed(const Duration(milliseconds: 900));
 
     final normalizedIdentity = identity.trim().toLowerCase();
-    final account = _accounts.where((item) => item.role == role).cast<_MockAccount?>().firstWhere(
+    final account = _accounts
+        .where((item) => item.role == role)
+        .cast<_MockAccount?>()
+        .firstWhere(
           (item) =>
               item != null &&
               (item.username.toLowerCase() == normalizedIdentity ||
@@ -85,7 +88,7 @@ class AuthService {
 
     if (alreadyExists) {
       throw const AuthException(
-        'Email atau username sudah dipakai. Gunakan data demo yang berbeda.',
+        'Email atau username sudah dipakai. Gunakan data lain.',
       );
     }
 

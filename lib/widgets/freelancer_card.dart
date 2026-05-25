@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'app_ui.dart';
+import 'auth_flow_widgets.dart';
+
 class FreelancerCard extends StatelessWidget {
   final String name;
   final String skill;
@@ -18,38 +21,58 @@ class FreelancerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
+      padding: const EdgeInsets.all(14),
       child: Row(
         children: [
           Container(
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(25),
+              color: AuthFlowPalette.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(18),
             ),
-            child: const Icon(Icons.person, color: Color(0xFF2563EB)),
+            child: const Icon(Icons.person, color: AuthFlowPalette.primary),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AuthFlowPalette.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 Text(
                   skill,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AuthFlowPalette.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 Row(
                   children: [
                     const Icon(Icons.star, size: 14, color: Color(0xFFF59E0B)),
-                    Text(' $rating ($projects proyek)'),
+                    Expanded(
+                      child: Text(
+                        ' $rating ($projects proyek)',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -61,16 +84,17 @@ class FreelancerCard extends StatelessWidget {
                 '\$$price',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF2563EB),
+                  color: AuthFlowPalette.primary,
                 ),
               ),
               const SizedBox(height: 4),
               ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(70, 30),
+                  minimumSize: const Size(76, 42),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                 ),
-                child: const Text('Hire', style: TextStyle(fontSize: 12)),
+                child: const Text('Pilih', style: TextStyle(fontSize: 12)),
               ),
             ],
           ),

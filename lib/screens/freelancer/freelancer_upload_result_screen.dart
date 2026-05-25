@@ -12,10 +12,12 @@ class FreelancerUploadResultScreen extends StatefulWidget {
   });
 
   @override
-  State<FreelancerUploadResultScreen> createState() => _FreelancerUploadResultScreenState();
+  State<FreelancerUploadResultScreen> createState() =>
+      _FreelancerUploadResultScreenState();
 }
 
-class _FreelancerUploadResultScreenState extends State<FreelancerUploadResultScreen> {
+class _FreelancerUploadResultScreenState
+    extends State<FreelancerUploadResultScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fileController = TextEditingController();
   final _linkController = TextEditingController();
@@ -139,7 +141,7 @@ class _FreelancerUploadResultScreenState extends State<FreelancerUploadResultScr
                     maxLines: 6,
                     decoration: const InputDecoration(
                       labelText: 'Catatan untuk client',
-                      hintText: 'Jelaskan apa yang sudah dikerjakan dan hal penting yang perlu dicek.',
+                      hintText: 'Ringkas hasil dan catatan penting.',
                       alignLabelWithHint: true,
                     ),
                     validator: (value) {
@@ -154,7 +156,8 @@ class _FreelancerUploadResultScreenState extends State<FreelancerUploadResultScr
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: _submitResult,
-                      icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                      icon: const Icon(Icons.check_circle_outline_rounded,
+                          size: 18),
                       label: const Text('Kirim Hasil'),
                     ),
                   ),
@@ -210,7 +213,7 @@ class _FreelancerUploadResultScreenState extends State<FreelancerUploadResultScr
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'File ${result.fileName} dikirim ke client. Tahap berikutnya: client meninjau hasil lalu memberikan rating.',
+                  'File ${result.fileName} dikirim. Menunggu review client.',
                   style: const TextStyle(
                     color: Color(0xFF64748B),
                     height: 1.5,

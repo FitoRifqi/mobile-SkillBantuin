@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'app_ui.dart';
+import 'auth_flow_widgets.dart';
+
 class ChatItem extends StatelessWidget {
   final String name;
   final String role;
@@ -20,13 +23,9 @@ class ChatItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Row(
         children: [
           Stack(
@@ -35,12 +34,12 @@ class ChatItem extends StatelessWidget {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(25),
+                  color: AuthFlowPalette.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(18),
                 ),
                 child: Icon(
                   isClient ? Icons.person : Icons.business,
-                  color: const Color(0xFF2563EB),
+                  color: AuthFlowPalette.primary,
                 ),
               ),
               if (isActive)
@@ -63,21 +62,45 @@ class ChatItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AuthFlowPalette.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 Text(
                   role,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AuthFlowPalette.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 Text(
                   lastMessage,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          Text(time, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+          Text(
+            time,
+            style: const TextStyle(
+              fontSize: 11,
+              color: Color(0xFF94A3B8),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );

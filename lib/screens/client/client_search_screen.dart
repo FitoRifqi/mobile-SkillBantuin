@@ -49,7 +49,7 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                colors: [Color(0xFF059669), Color(0xFF047857)],
               ),
               borderRadius: BorderRadius.circular(24),
             ),
@@ -66,7 +66,7 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
                 ),
                 SizedBox(height: 10),
                 Text(
-                  'Isi detail kebutuhanmu supaya volunteer lebih mudah memahami tugas, reward, dan deadline yang diharapkan.',
+                  'Isi tugas, budget, dan deadline.',
                   style: TextStyle(
                     color: Colors.white,
                     height: 1.6,
@@ -167,7 +167,7 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
                     controller: _budgetController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Reward / budget awal',
+                      labelText: 'Budget awal',
                       prefixText: 'Rp ',
                     ),
                     validator: (value) {
@@ -280,7 +280,8 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
       context: context,
       firstDate: DateTime.now(),
       lastDate: DateTime(2027),
-      initialDate: _selectedDeadline ?? DateTime.now().add(const Duration(days: 3)),
+      initialDate:
+          _selectedDeadline ?? DateTime.now().add(const Duration(days: 3)),
     );
 
     if (selected == null) return;
@@ -317,7 +318,7 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
       status: TaskStatus.waitingOffer,
       paymentStatus: PaymentStatus.unpaid,
       assistanceType: _assistanceType,
-      nearestAction: 'Menunggu volunteer mengirim penawaran',
+      nearestAction: 'Menunggu freelancer mengirim penawaran',
       progress: 10,
       offers: const [],
       location: _assistanceType == AssistanceType.offline
@@ -337,7 +338,7 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Permintaan bantuan berhasil dibuat untuk demo.'),
+        content: Text('Bantuan berhasil dibuat.'),
       ),
     );
   }

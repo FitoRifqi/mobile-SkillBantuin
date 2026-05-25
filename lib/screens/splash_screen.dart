@@ -73,7 +73,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Temukan bantuan cepat dan kolaborasi kerja yang terasa profesional sejak layar pertama.',
+                  'Cari bantuan. Kerjakan tugas. Pantau progres.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
@@ -98,7 +98,7 @@ class _SplashScreenState extends State<SplashScreen> {
                       SizedBox(width: 14),
                       Expanded(
                         child: Text(
-                          'Menyiapkan pengalaman yang lebih rapi untuk kamu...',
+                          'Menyiapkan aplikasi...',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -110,7 +110,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
                 const Spacer(),
                 Text(
-                  'Responsive UI for client and freelancer journey',
+                  'Client dan freelancer dalam satu aplikasi',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,

@@ -40,7 +40,7 @@ class ClientOffersScreen extends StatelessWidget {
           if (task.offers.isEmpty)
             const _InfoPanel(
               title: 'Belum ada penawaran',
-              subtitle: 'Begitu volunteer mengajukan offer, daftar ini akan terisi otomatis.',
+              subtitle: 'Penawaran freelancer akan muncul di sini.',
             ),
         ],
       ),
@@ -138,12 +138,12 @@ class _OfferCard extends StatelessWidget {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                  color: const Color(0xFF059669).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Icon(
                   Icons.person_rounded,
-                  color: Color(0xFF2563EB),
+                  color: Color(0xFF059669),
                 ),
               ),
               const SizedBox(width: 12),
@@ -213,8 +213,9 @@ class _OfferCard extends StatelessWidget {
                   final rooms = MockChatService().getClientRooms();
                   final matchedRooms =
                       rooms.where((item) => item.taskId == task.id).toList();
-                  final room =
-                      matchedRooms.isNotEmpty ? matchedRooms.first : rooms.first;
+                  final room = matchedRooms.isNotEmpty
+                      ? matchedRooms.first
+                      : rooms.first;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -246,7 +247,7 @@ class _OfferCard extends StatelessWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                'Offer ${offer.freelancerName} diteruskan ke pembayaran. Status demo lanjut ke ${taskStatusLabel(result.nextTaskStatus)}.',
+                                'Lanjut ke pembayaran untuk ${offer.freelancerName}.',
                               ),
                             ),
                           );
@@ -258,14 +259,14 @@ class _OfferCard extends StatelessWidget {
               OutlinedButton(
                 onPressed: () => _showMessage(
                   context,
-                  'Penawaran ${offer.freelancerName} ditandai sebagai ditolak secara demo.',
+                  'Penawaran ${offer.freelancerName} ditolak.',
                 ),
                 child: const Text('Tolak'),
               ),
               TextButton(
                 onPressed: () => _showMessage(
                   context,
-                  'Flow tawar balik penuh akan dipusatkan di chat pada Tahap 5.',
+                  'Tawar balik lewat chat.',
                 ),
                 child: const Text('Tawar Balik'),
               ),
@@ -303,7 +304,7 @@ class _MiniInfoChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF2563EB)),
+          Icon(icon, size: 16, color: const Color(0xFF059669)),
           const SizedBox(width: 8),
           Text(
             label,

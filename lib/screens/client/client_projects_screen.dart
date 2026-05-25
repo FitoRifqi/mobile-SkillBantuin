@@ -4,6 +4,8 @@ import '../../models/task_models.dart';
 import '../../models/workflow_results.dart';
 import '../../services/mock_task_service.dart';
 import '../../utils/task_ui_utils.dart';
+import '../../widgets/app_ui.dart';
+import '../../widgets/auth_flow_widgets.dart';
 import '../../widgets/status_badge.dart';
 import 'client_payment_screen.dart';
 import 'client_review_screen.dart';
@@ -37,25 +39,15 @@ class _ClientActivityViewState extends State<_ClientActivityView> {
         : allTasks.where((task) => task.status == _selectedStatus).toList();
 
     return Scaffold(
+      backgroundColor: AppUi.pageBackground,
       appBar: AppBar(
         title: const Text('Aktivitas Client'),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: AppUi.pagePadding,
         children: [
-          Container(
+          AppCard(
             padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -98,12 +90,19 @@ class _ClientActivityViewState extends State<_ClientActivityView> {
             ),
           ),
           const SizedBox(height: 16),
-          ...filteredTasks.map(
-            (task) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _ActivityTaskCard(task: task),
+          if (filteredTasks.isEmpty)
+            const AppEmptyState(
+              icon: Icons.inbox_outlined,
+              title: 'Belum ada tugas',
+              message: 'Ubah filter status untuk melihat aktivitas lainnya.',
+            )
+          else
+            ...filteredTasks.map(
+              (task) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _ActivityTaskCard(task: task),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -117,19 +116,8 @@ class _ActivityTaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -145,14 +133,14 @@ class _ActivityTaskCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF0F172A),
+                        color: AuthFlowPalette.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       task.nearestAction,
                       style: const TextStyle(
-                        color: Color(0xFF64748B),
+                        color: AuthFlowPalette.textSecondary,
                         height: 1.45,
                       ),
                     ),
@@ -172,14 +160,15 @@ class _ActivityTaskCard extends StatelessWidget {
             runSpacing: 8,
             children: [
               _MiniChip(icon: Icons.sell_outlined, label: task.category),
-              _MiniChip(icon: Icons.schedule_rounded, label: task.deadlineLabel),
+              _MiniChip(
+                  icon: Icons.schedule_rounded, label: task.deadlineLabel),
               _MiniChip(
                 icon: Icons.wallet_outlined,
                 label: formatRupiah(task.agreedBudget ?? task.initialBudget),
               ),
               _MiniChip(
                 icon: Icons.person_outline_rounded,
-                label: task.assignedFreelancer ?? 'Belum ada volunteer',
+                label: task.assignedFreelancer ?? 'Belum ada freelancer',
               ),
             ],
           ),
@@ -215,7 +204,8 @@ class _ActivityTaskCard extends StatelessWidget {
 
   String _primaryActionLabel() {
     if (task.status == TaskStatus.waitingPayment) return 'Bayar';
-    if (task.status == TaskStatus.completed || task.status == TaskStatus.submitted) {
+    if (task.status == TaskStatus.completed ||
+        task.status == TaskStatus.submitted) {
       return 'Review';
     }
     return 'Lanjut';
@@ -231,9 +221,9 @@ class _ActivityTaskCard extends StatelessWidget {
       );
       if (result != null && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text(
-              'Pembayaran dicatat. Status demo lanjut ke ${taskStatusLabel(result.nextTaskStatus)}.',
+              'Pembayaran dicatat.',
             ),
           ),
         );
@@ -241,7 +231,8 @@ class _ActivityTaskCard extends StatelessWidget {
       return;
     }
 
-    if (task.status == TaskStatus.completed || task.status == TaskStatus.submitted) {
+    if (task.status == TaskStatus.completed ||
+        task.status == TaskStatus.submitted) {
       final result = await Navigator.push<ReviewSubmissionResult>(
         context,
         MaterialPageRoute(
@@ -252,7 +243,7 @@ class _ActivityTaskCard extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Review ${result.rating} bintang tersimpan. Task demo menjadi ${taskStatusLabel(result.finalTaskStatus)}.',
+              'Review ${result.rating} bintang tersimpan.',
             ),
           ),
         );
@@ -289,7 +280,7 @@ class _MiniChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF2563EB)),
+          Icon(icon, size: 16, color: const Color(0xFF059669)),
           const SizedBox(width: 8),
           Text(
             label,

@@ -3,11 +3,14 @@ import '../models/task_models.dart';
 class MockTaskService {
   List<HelperCategory> getClientCategories() {
     return const [
-      HelperCategory(title: 'Desain Grafis', subtitle: 'Poster, feed, branding'),
+      HelperCategory(
+          title: 'Desain Grafis', subtitle: 'Poster, feed, branding'),
       HelperCategory(title: 'Programming', subtitle: 'Web, mobile, bug fixing'),
       HelperCategory(title: 'Translate', subtitle: 'EN-ID dan sebaliknya'),
-      HelperCategory(title: 'Data Entry', subtitle: 'Input, olah, rapikan data'),
-      HelperCategory(title: 'Akademik', subtitle: 'Presentasi, rangkuman, riset'),
+      HelperCategory(
+          title: 'Data Entry', subtitle: 'Input, olah, rapikan data'),
+      HelperCategory(
+          title: 'Akademik', subtitle: 'Presentasi, rangkuman, riset'),
       HelperCategory(title: 'Editing Video', subtitle: 'Short video dan reels'),
     ];
   }
@@ -53,7 +56,7 @@ class MockTaskService {
         status: TaskStatus.negotiation,
         paymentStatus: PaymentStatus.unpaid,
         assistanceType: AssistanceType.online,
-        nearestAction: 'Tinjau 3 penawaran volunteer',
+        nearestAction: 'Tinjau 3 penawaran freelancer',
         progress: 25,
         assignedFreelancer: 'Nadia Putri',
         attachmentName: 'brief-poster.pdf',
@@ -66,7 +69,8 @@ class MockTaskService {
             completedTasks: 48,
             offeredBudget: 35000,
             proposedDeadline: '1 hari',
-            message: 'Saya bisa bantu desain poster modern dengan 2 opsi revisi.',
+            message:
+                'Saya bisa bantu desain poster modern dengan 2 opsi revisi.',
             status: OfferStatus.countered,
           ),
           VolunteerOffer(
@@ -77,7 +81,8 @@ class MockTaskService {
             completedTasks: 31,
             offeredBudget: 33000,
             proposedDeadline: '2 hari',
-            message: 'Siap bantu dengan style kampus yang formal dan tetap menarik.',
+            message:
+                'Siap bantu dengan style kampus yang formal dan tetap menarik.',
             status: OfferStatus.pending,
           ),
           VolunteerOffer(
@@ -88,7 +93,8 @@ class MockTaskService {
             completedTasks: 22,
             offeredBudget: 30000,
             proposedDeadline: '2 hari',
-            message: 'Budget sesuai, saya bisa mulai malam ini setelah brief final.',
+            message:
+                'Budget sesuai, saya bisa mulai malam ini setelah brief final.',
             status: OfferStatus.pending,
           ),
         ],
@@ -119,7 +125,8 @@ class MockTaskService {
             completedTasks: 64,
             offeredBudget: 45000,
             proposedDeadline: '1 hari',
-            message: 'Saya terbiasa merapikan data akademik dan bisa selesai cepat.',
+            message:
+                'Saya terbiasa merapikan data akademik dan bisa selesai cepat.',
             status: OfferStatus.accepted,
           ),
         ],
@@ -129,7 +136,7 @@ class MockTaskService {
         title: 'Review PPT Sidang Proposal',
         category: 'Akademik',
         description:
-            'Butuh volunteer untuk memberi masukan isi dan desain presentasi sidang proposal agar lebih rapi dan meyakinkan.',
+            'Butuh freelancer untuk memberi masukan isi dan desain presentasi sidang proposal.',
         initialBudget: 25000,
         agreedBudget: 25000,
         deadlineLabel: '2 Mei 2026',
@@ -150,7 +157,8 @@ class MockTaskService {
             completedTasks: 39,
             offeredBudget: 25000,
             proposedDeadline: '1 hari',
-            message: 'Saya bisa bantu rapikan flow slide dan highlight poin penting.',
+            message:
+                'Saya bisa bantu rapikan flow slide dan highlight poin penting.',
             status: OfferStatus.accepted,
           ),
         ],
@@ -168,7 +176,8 @@ class MockTaskService {
         status: TaskStatus.submitted,
         paymentStatus: PaymentStatus.verified,
         assistanceType: AssistanceType.online,
-        nearestAction: 'Tinjau hasil yang sudah dikirim sebelum konfirmasi selesai',
+        nearestAction:
+            'Tinjau hasil yang sudah dikirim sebelum konfirmasi selesai',
         progress: 95,
         assignedFreelancer: 'Raka Aditya',
         attachmentName: 'footage-event.zip',
@@ -199,7 +208,7 @@ class MockTaskService {
         status: TaskStatus.completed,
         paymentStatus: PaymentStatus.verified,
         assistanceType: AssistanceType.online,
-        nearestAction: 'Beri rating dan review untuk volunteer',
+        nearestAction: 'Beri rating dan review untuk freelancer',
         progress: 100,
         assignedFreelancer: 'Siti Maharani',
         offers: [
@@ -211,7 +220,8 @@ class MockTaskService {
             completedTasks: 56,
             offeredBudget: 20000,
             proposedDeadline: '1 hari',
-            message: 'Siap bantu terjemahan formal dengan revisi minor jika perlu.',
+            message:
+                'Siap bantu terjemahan formal dengan revisi minor jika perlu.',
             status: OfferStatus.accepted,
           ),
         ],
@@ -245,7 +255,7 @@ class MockTaskService {
         title: 'Rapikan Data Absensi Excel',
         category: 'Data Entry',
         description:
-            'Perlu volunteer untuk membersihkan data absensi dan membuat rekap sederhana yang siap dipresentasikan.',
+            'Perlu freelancer untuk membersihkan data absensi dan membuat rekap sederhana.',
         initialBudget: 45000,
         deadlineLabel: '4 Mei 2026',
         assistanceType: AssistanceType.online,
@@ -330,7 +340,7 @@ class MockTaskService {
         category: 'Desain Grafis',
         offeredBudget: 60000,
         proposedDeadline: '2 hari',
-        note: 'Client memilih volunteer lain untuk task ini.',
+        note: 'Client memilih freelancer lain untuk tugas ini.',
         status: OfferStatus.rejected,
         updatedAtLabel: '2 hari lalu',
       ),

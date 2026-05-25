@@ -1,17 +1,27 @@
-# skillbantuinnew
+# SkillBantuin
 
-A new Flutter project.
+SkillBantuin adalah aplikasi mobile untuk mempertemukan client yang butuh bantuan tugas kecil dengan freelancer yang punya skill sesuai.
 
-## Getting Started
+## Alur Utama
 
-This project is a starting point for a Flutter application.
+1. Client membuat permintaan bantuan.
+2. Freelancer melihat tugas dan mengirim penawaran.
+3. Client memilih freelancer.
+4. Client membayar lewat Midtrans.
+5. Freelancer mengerjakan dan mengirim hasil.
+6. Client memberi review.
 
-A few resources to get you started if this is your first Flutter project:
+## Role
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- Client: buat tugas, pilih freelancer, bayar, review hasil.
+- Freelancer: cari tugas, kirim penawaran, kerjakan tugas, pantau pendapatan.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Payment
+
+Payment akan memakai Midtrans Snap.
+
+Untuk saat ini layar pembayaran masih placeholder agar alur aplikasi bisa dicoba. Saat backend siap, tombol "Bayar via Midtrans" diarahkan ke Snap token dari server.
+
+## Status Project
+
+Saat ini aplikasi masih frontend prototype dengan data mock lokal. Fokusnya adalah membuat alur MVP mudah dipahami sebelum disambungkan ke backend dan Midtrans.

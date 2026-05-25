@@ -155,7 +155,7 @@ class _WorkCard extends StatelessWidget {
                 child: Text(
                   'Budget ${formatRupiah(item.agreedBudget)}',
                   style: const TextStyle(
-                    color: Color(0xFF2563EB),
+                    color: Color(0xFF059669),
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -192,9 +192,9 @@ class _WorkCard extends StatelessWidget {
                 );
                 if (result != null && context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
+                    const SnackBar(
                       content: Text(
-                        'Hasil dikirim. Status demo lanjut ke ${taskStatusLabel(result.nextTaskStatus)} dan menunggu review client.',
+                        'Hasil dikirim. Menunggu review client.',
                       ),
                     ),
                   );

@@ -21,7 +21,8 @@ class ClientHomeScreen extends StatelessWidget {
     final freelancers = taskService.getRecommendedFreelancers();
     final activeTasks = tasks
         .where(
-          (task) => task.status == TaskStatus.negotiation ||
+          (task) =>
+              task.status == TaskStatus.negotiation ||
               task.status == TaskStatus.waitingPayment ||
               task.status == TaskStatus.onProgress ||
               task.status == TaskStatus.submitted,
@@ -34,9 +35,8 @@ class ClientHomeScreen extends StatelessWidget {
         children: [
           DashboardHeroCard(
             greeting: 'Dashboard Client',
-            title: 'Temukan bantuan kecil yang tepat dan pantau progresnya dengan cepat.',
-            description:
-                'Beranda client sekarang difokuskan ke kebutuhan utama: cari kategori skill, lihat bantuan aktif, cek deadline terdekat, lalu lanjut ke penawaran atau pembayaran.',
+            title: 'Buat bantuan. Pantau progres.',
+            description: 'Kelola tugas, penawaran, chat, dan pembayaran.',
             primaryActionLabel: 'Buat Bantuan',
             primaryActionIcon: Icons.add_task_rounded,
             onPrimaryAction: () {
@@ -65,7 +65,7 @@ class ClientHomeScreen extends StatelessWidget {
                 icon: Icons.chat_bubble_outline_rounded,
                 onTap: () => _showMessage(
                   context,
-                  'Chat room terhubung penuh akan saya lanjutkan di Tahap 5.',
+                  'Buka tab Chat untuk melanjutkan percakapan aktif.',
                 ),
               ),
             ],
@@ -109,22 +109,36 @@ class ClientHomeScreen extends StatelessWidget {
                 color: AuthFlowPalette.primary,
               ),
               DashboardMetricData(
-                label: 'Menunggu Offer',
-                value: tasks.where((task) => task.status == TaskStatus.waitingOffer).length.toString().padLeft(2, '0'),
-                helperText: 'Perlu exposure',
+                label: 'Menunggu',
+                value: tasks
+                    .where((task) => task.status == TaskStatus.waitingOffer)
+                    .length
+                    .toString()
+                    .padLeft(2, '0'),
+                helperText: 'Butuh offer',
                 icon: Icons.pending_actions_rounded,
-                color: const Color(0xFF0EA5E9),
+                color: const Color(0xFF14B8A6),
               ),
               DashboardMetricData(
                 label: 'Belum Bayar',
-                value: tasks.where((task) => task.paymentStatus == PaymentStatus.unpaid || task.paymentStatus == PaymentStatus.pending).length.toString().padLeft(2, '0'),
+                value: tasks
+                    .where((task) =>
+                        task.paymentStatus == PaymentStatus.unpaid ||
+                        task.paymentStatus == PaymentStatus.pending)
+                    .length
+                    .toString()
+                    .padLeft(2, '0'),
                 helperText: 'Cek pembayaran',
                 icon: Icons.payments_outlined,
                 color: const Color(0xFFF59E0B),
               ),
               DashboardMetricData(
                 label: 'Selesai',
-                value: tasks.where((task) => task.status == TaskStatus.completed).length.toString().padLeft(2, '0'),
+                value: tasks
+                    .where((task) => task.status == TaskStatus.completed)
+                    .length
+                    .toString()
+                    .padLeft(2, '0'),
                 helperText: 'Siap direview',
                 icon: Icons.task_alt_rounded,
                 color: const Color(0xFF10B981),
@@ -134,7 +148,7 @@ class ClientHomeScreen extends StatelessWidget {
           const SizedBox(height: 28),
           const DashboardSectionHeader(
             title: 'Kategori Skill',
-            subtitle: 'Kategori populer yang paling sering dipakai client saat membuat bantuan.',
+            subtitle: 'Pilih kategori yang kamu butuhkan.',
           ),
           const SizedBox(height: 14),
           Wrap(
@@ -149,7 +163,7 @@ class ClientHomeScreen extends StatelessWidget {
           const SizedBox(height: 28),
           DashboardSectionHeader(
             title: 'Bantuan Aktif',
-            subtitle: 'Tugas yang sedang butuh atensi, penawaran, atau tindak lanjut darimu.',
+            subtitle: 'Tugas yang perlu kamu cek.',
             actionLabel: 'Lihat Aktivitas',
             onActionTap: () {
               Navigator.push(
@@ -162,15 +176,15 @@ class ClientHomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           ...activeTasks.take(3).map(
-            (task) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _ActiveTaskCard(task: task),
-            ),
-          ),
+                (task) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _ActiveTaskCard(task: task),
+                ),
+              ),
           const SizedBox(height: 16),
           const DashboardSectionHeader(
             title: 'Deadline Terdekat',
-            subtitle: 'Supaya kamu langsung tahu tugas mana yang perlu diprioritaskan hari ini.',
+            subtitle: 'Prioritas hari ini.',
           ),
           const SizedBox(height: 14),
           DashboardPanel(
@@ -188,8 +202,8 @@ class ClientHomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           const DashboardSectionHeader(
-            title: 'Volunteer Rekomendasi',
-            subtitle: 'Referensi cepat jika kamu ingin mencari bantuan dengan respons yang bagus.',
+            title: 'Freelancer Rekomendasi',
+            subtitle: 'Freelancer dengan respons baik.',
           ),
           const SizedBox(height: 14),
           ...freelancers.map(
@@ -215,7 +229,7 @@ class ClientHomeScreen extends StatelessWidget {
         ),
       ),
       child: const Icon(
-        Icons.volunteer_activism_rounded,
+        Icons.handshake_rounded,
         size: 44,
         color: Colors.white,
       ),
@@ -389,7 +403,7 @@ class _DeadlineTile extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '${task.deadlineLabel} • ${task.assignedFreelancer ?? 'Belum ada volunteer'}',
+                '${task.deadlineLabel} • ${task.assignedFreelancer ?? 'Belum ada freelancer'}',
                 style: const TextStyle(
                   color: AuthFlowPalette.textSecondary,
                 ),

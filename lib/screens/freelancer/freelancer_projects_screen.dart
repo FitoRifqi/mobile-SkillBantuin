@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../models/task_models.dart';
 import '../../services/mock_task_service.dart';
 import '../../utils/task_ui_utils.dart';
+import '../../widgets/app_ui.dart';
+import '../../widgets/auth_flow_widgets.dart';
 import '../../widgets/status_badge.dart';
 
 class FreelancerProjectsScreen extends StatelessWidget {
@@ -13,9 +15,10 @@ class FreelancerProjectsScreen extends StatelessWidget {
     final applications = MockTaskService().getFreelancerApplications();
 
     return Scaffold(
+      backgroundColor: AppUi.pageBackground,
       appBar: AppBar(title: const Text('Penawaran Saya')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: AppUi.pagePadding,
         children: applications
             .map(
               (item) => Padding(
@@ -36,19 +39,8 @@ class _ApplicationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -64,7 +56,7 @@ class _ApplicationCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF0F172A),
+                        color: AuthFlowPalette.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -138,7 +130,7 @@ class _MiniChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF2563EB)),
+          Icon(icon, size: 16, color: const Color(0xFF059669)),
           const SizedBox(width: 8),
           Text(
             label,

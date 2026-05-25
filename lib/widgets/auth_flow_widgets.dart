@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class AuthFlowPalette {
-  static const Color primary = Color(0xFF2563EB);
-  static const Color secondary = Color(0xFF1D4ED8);
-  static const Color accent = Color(0xFF60A5FA);
+  static const Color primary = Color(0xFF059669);
+  static const Color secondary = Color(0xFF047857);
+  static const Color accent = Color(0xFF34D399);
   static const Color textPrimary = Color(0xFF0F172A);
   static const Color textSecondary = Color(0xFF475569);
 
@@ -12,8 +12,8 @@ class AuthFlowPalette {
     end: Alignment.bottomRight,
     colors: [
       Color(0xFF0F172A),
-      Color(0xFF1D4ED8),
-      Color(0xFF38BDF8),
+      Color(0xFF047857),
+      Color(0xFF2DD4BF),
     ],
     stops: [0.0, 0.58, 1.0],
   );
@@ -63,34 +63,42 @@ class AuthGradientBackground extends StatelessWidget {
       decoration: const BoxDecoration(
         gradient: AuthFlowPalette.backgroundGradient,
       ),
-      child: Stack(
-        children: [
-          const Positioned(
-            top: -80,
-            right: -40,
-            child: _GlowCircle(
-              size: 220,
-              color: Color(0x33FFFFFF),
-            ),
+      child: TextButtonTheme(
+        data: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.white,
+            minimumSize: const Size(44, 44),
           ),
-          const Positioned(
-            bottom: -120,
-            left: -60,
-            child: _GlowCircle(
-              size: 280,
-              color: Color(0x227DD3FC),
+        ),
+        child: Stack(
+          children: [
+            const Positioned(
+              top: -80,
+              right: -40,
+              child: _GlowCircle(
+                size: 220,
+                color: Color(0x33FFFFFF),
+              ),
             ),
-          ),
-          const Positioned(
-            top: 180,
-            left: -30,
-            child: _GlowCircle(
-              size: 140,
-              color: Color(0x18FFFFFF),
+            const Positioned(
+              bottom: -120,
+              left: -60,
+              child: _GlowCircle(
+                size: 280,
+                color: Color(0x227DD3FC),
+              ),
             ),
-          ),
-          child,
-        ],
+            const Positioned(
+              top: 180,
+              left: -30,
+              child: _GlowCircle(
+                size: 140,
+                color: Color(0x18FFFFFF),
+              ),
+            ),
+            child,
+          ],
+        ),
       ),
     );
   }
@@ -216,7 +224,7 @@ class AuthBrandMark extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             Colors.white,
-            Color(0xFFDCEEFF),
+            Color(0xFFDCFCE7),
           ],
         ),
         boxShadow: [
@@ -256,7 +264,7 @@ class AuthPrimaryButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+            color: const Color(0xFF059669).withValues(alpha: 0.3),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),

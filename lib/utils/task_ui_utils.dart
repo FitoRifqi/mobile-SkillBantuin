@@ -31,14 +31,14 @@ Color taskStatusColor(TaskStatus status) {
   switch (status) {
     case TaskStatus.open:
     case TaskStatus.waitingOffer:
-      return const Color(0xFF0EA5E9);
+      return const Color(0xFF14B8A6);
     case TaskStatus.negotiation:
-      return const Color(0xFF7C3AED);
+      return const Color(0xFF16A34A);
     case TaskStatus.waitingPayment:
       return const Color(0xFFF59E0B);
     case TaskStatus.paymentVerified:
     case TaskStatus.onProgress:
-      return const Color(0xFF2563EB);
+      return const Color(0xFF059669);
     case TaskStatus.submitted:
       return const Color(0xFFEC4899);
     case TaskStatus.completed:
@@ -72,7 +72,7 @@ Color offerStatusColor(OfferStatus status) {
     case OfferStatus.rejected:
       return const Color(0xFFDC2626);
     case OfferStatus.countered:
-      return const Color(0xFF7C3AED);
+      return const Color(0xFF16A34A);
   }
 }
 
@@ -96,7 +96,7 @@ Color paymentStatusColor(PaymentStatus status) {
     case PaymentStatus.unpaid:
       return const Color(0xFFF59E0B);
     case PaymentStatus.pending:
-      return const Color(0xFF0EA5E9);
+      return const Color(0xFF14B8A6);
     case PaymentStatus.verified:
       return const Color(0xFF10B981);
     case PaymentStatus.failed:
@@ -135,7 +135,7 @@ Color workStatusColor(WorkStatus status) {
     case WorkStatus.notStarted:
       return const Color(0xFF64748B);
     case WorkStatus.inProgress:
-      return const Color(0xFF2563EB);
+      return const Color(0xFF059669);
     case WorkStatus.waitingConfirmation:
       return const Color(0xFFF59E0B);
     case WorkStatus.completed:

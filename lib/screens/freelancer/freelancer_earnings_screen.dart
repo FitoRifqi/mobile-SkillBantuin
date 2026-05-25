@@ -22,7 +22,7 @@ class FreelancerEarningsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pendapatan Volunteer'),
+        title: const Text('Pendapatan'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -31,7 +31,7 @@ class FreelancerEarningsScreen extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                colors: [Color(0xFF059669), Color(0xFF047857)],
               ),
               borderRadius: BorderRadius.circular(24),
             ),
@@ -107,7 +107,7 @@ class FreelancerEarningsScreen extends StatelessWidget {
                         Text(
                           formatRupiah(item.amount),
                           style: const TextStyle(
-                            color: Color(0xFF2563EB),
+                            color: Color(0xFF059669),
                             fontWeight: FontWeight.w800,
                           ),
                         ),

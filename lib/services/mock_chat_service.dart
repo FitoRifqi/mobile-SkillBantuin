@@ -11,7 +11,8 @@ class MockChatService {
   }
 
   ChatRoom getRoomById(String id) {
-    return [..._clientRooms, ..._freelancerRooms].firstWhere((room) => room.id == id);
+    return [..._clientRooms, ..._freelancerRooms]
+        .firstWhere((room) => room.id == id);
   }
 }
 
@@ -20,7 +21,8 @@ const List<ChatMessage> _room001Messages = [
     id: 'msg-001',
     sender: ChatPartyRole.client,
     type: ChatMessageType.text,
-    content: 'Halo Kak Nadia, saya tertarik dengan penawarannya untuk poster seminar.',
+    content:
+        'Halo Kak Nadia, saya tertarik dengan penawarannya untuk poster seminar.',
     timeLabel: '09:10',
     status: ChatStatus.read,
   ),
@@ -32,7 +34,7 @@ const List<ChatMessage> _room001Messages = [
     timeLabel: '09:12',
     status: ChatStatus.read,
     negotiation: NegotiationData(
-      title: 'Penawaran Volunteer',
+      title: 'Penawaran Freelancer',
       reward: 35000,
       deadline: '1 hari',
       status: NegotiationStatus.pending,
@@ -58,7 +60,7 @@ const List<ChatMessage> _room001Messages = [
     id: 'msg-004',
     sender: ChatPartyRole.freelancer,
     type: ChatMessageType.text,
-    content: 'Kalau reward jadi Rp32.000, saya bisa kirim draft malam ini.',
+    content: 'Kalau budget Rp32.000, saya bisa kirim draft malam ini.',
     timeLabel: '10:30',
     status: ChatStatus.unread,
   ),
@@ -77,7 +79,7 @@ const List<ChatMessage> _room002Messages = [
     id: 'msg-006',
     sender: ChatPartyRole.client,
     type: ChatMessageType.text,
-    content: 'Pembayaran dummy sudah saya upload, silakan mulai kerja ya.',
+    content: 'Pembayaran sudah diproses, silakan mulai kerja ya.',
     timeLabel: '09:15',
     status: ChatStatus.read,
   ),
@@ -110,7 +112,7 @@ const List<ChatRoom> _clientRooms = [
     counterpartName: 'Nadia Putri',
     counterpartRoleLabel: 'Graphic Designer',
     counterpartOnline: true,
-    lastMessage: 'Kalau reward jadi Rp32.000, saya bisa kirim draft malam ini.',
+    lastMessage: 'Kalau budget Rp32.000, saya bisa kirim draft malam ini.',
     lastMessageTime: '10:30',
     unreadCount: 2,
     taskStatus: TaskStatus.negotiation,
@@ -123,7 +125,7 @@ const List<ChatRoom> _clientRooms = [
     counterpartName: 'Budi Santoso',
     counterpartRoleLabel: 'Data Entry Specialist',
     counterpartOnline: false,
-    lastMessage: 'Pembayaran dummy sudah saya upload, silakan mulai kerja ya.',
+    lastMessage: 'Pembayaran sudah diproses, silakan mulai kerja ya.',
     lastMessageTime: '09:15',
     unreadCount: 0,
     taskStatus: TaskStatus.waitingPayment,
@@ -152,7 +154,7 @@ const List<ChatRoom> _freelancerRooms = [
     counterpartName: 'Dina Amelia',
     counterpartRoleLabel: 'Client',
     counterpartOnline: true,
-    lastMessage: 'Kalau reward jadi Rp32.000, saya bisa kirim draft malam ini.',
+    lastMessage: 'Kalau budget Rp32.000, saya bisa kirim draft malam ini.',
     lastMessageTime: '10:30',
     unreadCount: 2,
     taskStatus: TaskStatus.negotiation,
@@ -165,7 +167,7 @@ const List<ChatRoom> _freelancerRooms = [
     counterpartName: 'Budi Santosa',
     counterpartRoleLabel: 'Client',
     counterpartOnline: false,
-    lastMessage: 'Pembayaran dummy sudah saya upload, silakan mulai kerja ya.',
+    lastMessage: 'Pembayaran sudah diproses, silakan mulai kerja ya.',
     lastMessageTime: '09:15',
     unreadCount: 0,
     taskStatus: TaskStatus.waitingPayment,

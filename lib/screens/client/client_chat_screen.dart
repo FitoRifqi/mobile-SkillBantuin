@@ -78,10 +78,11 @@ class _ChatRoomTile extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 26,
-                  backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                  backgroundColor:
+                      const Color(0xFF059669).withValues(alpha: 0.1),
                   child: const Icon(
                     Icons.person_rounded,
-                    color: Color(0xFF2563EB),
+                    color: Color(0xFF059669),
                   ),
                 ),
                 if (room.counterpartOnline)
@@ -151,9 +152,10 @@ class _ChatRoomTile extends StatelessWidget {
                       const Spacer(),
                       if (room.unreadCount > 0)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 5),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF2563EB),
+                            color: const Color(0xFF059669),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(

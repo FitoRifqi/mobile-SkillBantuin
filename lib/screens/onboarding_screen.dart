@@ -17,25 +17,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingData> _onboardingData = [
     OnboardingData(
-      icon: Icons.volunteer_activism,
-      title: 'Bantu Sesama',
-      description:
-          'Bagikan keahlianmu untuk membantu orang lain dalam tugas-tugas kecil.',
-      color: const Color(0xFF4A6FFF),
+      icon: Icons.handshake_rounded,
+      title: 'Bantu Lebih Cepat',
+      description: 'Temukan orang yang tepat untuk tugas kecilmu.',
+      color: const Color(0xFF059669),
     ),
     OnboardingData(
       icon: Icons.work_outline,
-      title: 'Dapatkan Penghargaan',
-      description:
-          'Dapatkan poin, sertifikat, dan testimoni dari orang yang kamu bantu.',
-      color: const Color(0xFF6C8EFF),
+      title: 'Ambil Peluang',
+      description: 'Pilih tugas sesuai skill dan waktu luangmu.',
+      color: const Color(0xFF10B981),
     ),
     OnboardingData(
       icon: Icons.schedule,
-      title: 'Fleksibel & Cepat',
-      description:
-          'Tugas kecil yang bisa diselesaikan dalam hitungan menit, di mana saja.',
-      color: const Color(0xFF8CAAFF),
+      title: 'Pantau Progres',
+      description: 'Chat, deadline, dan status kerja ada di satu tempat.',
+      color: const Color(0xFF34D399),
     ),
   ];
 
@@ -73,7 +70,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ),
                           Text(
-                            'Kolaborasi cepat untuk klien dan freelancer',
+                            'Bantuan cepat, kerja jelas',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.76),
                             ),
@@ -242,7 +239,7 @@ class OnboardingContent extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Tampilan dibuat ringan dan nyaman dibaca di layar kecil maupun besar.',
+                      'Mulai cepat. Pilih peran, lalu lanjut bekerja.',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.76),
                         fontSize: 13,

@@ -30,8 +30,8 @@ class RoleSelectionScreen extends StatelessWidget {
                 SizedBox(height: spacing),
                 Text(
                   mode == AuthFlowMode.login
-                      ? 'Pilih peran untuk masuk ke dashboard yang tepat'
-                      : 'Pilih peran untuk mulai membuat akun demo',
+                      ? 'Masuk sebagai apa?'
+                      : 'Daftar sebagai apa?',
                   style: const TextStyle(
                     fontSize: 30,
                     fontWeight: FontWeight.w800,
@@ -42,8 +42,8 @@ class RoleSelectionScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   mode == AuthFlowMode.login
-                      ? 'Role dipakai untuk menentukan alur kerja dan navigasi yang akan kamu lihat setelah login.'
-                      : 'Role dipakai untuk menyiapkan form daftar dan dashboard demo yang sesuai kebutuhan client atau freelancer.',
+                      ? 'Pilih dashboard yang sesuai kebutuhanmu.'
+                      : 'Pilih peran untuk menyiapkan akunmu.',
                   style: TextStyle(
                     fontSize: 15,
                     height: 1.65,
@@ -53,24 +53,24 @@ class RoleSelectionScreen extends StatelessWidget {
                 SizedBox(height: spacing),
                 _RoleCard(
                   title: 'Saya Client',
-                  subtitle: 'Cari freelancer dengan cepat dan kelola kebutuhan proyek dengan rapi.',
+                  subtitle: 'Buat bantuan dan pilih freelancer.',
                   icon: Icons.manage_search_rounded,
-                  accentColor: const Color(0xFF93C5FD),
+                  accentColor: const Color(0xFF86EFAC),
                   points: const [
-                    'Cocok untuk yang ingin mencari bantuan profesional',
-                    'Masuk untuk memposting proyek dan mengatur kandidat',
+                    'Posting tugas',
+                    'Kelola penawaran',
                   ],
                   onTap: () => _goToLogin(context, UserRole.client),
                 ),
                 const SizedBox(height: 16),
                 _RoleCard(
                   title: 'Saya Freelancer',
-                  subtitle: 'Temukan proyek sesuai skill dan bangun profil kerja yang lebih meyakinkan.',
+                  subtitle: 'Cari tugas dan kirim penawaran.',
                   icon: Icons.work_history_rounded,
-                  accentColor: const Color(0xFFBFDBFE),
+                  accentColor: const Color(0xFFBBF7D0),
                   points: const [
-                    'Cocok untuk yang ingin mencari peluang kerja fleksibel',
-                    'Masuk untuk melihat proyek dan mengelola lamaran',
+                    'Cari peluang',
+                    'Pantau pekerjaan',
                   ],
                   onTap: () => _goToLogin(context, UserRole.freelancer),
                 ),
@@ -90,8 +90,8 @@ class RoleSelectionScreen extends StatelessWidget {
                       Expanded(
                         child: Text(
                           mode == AuthFlowMode.login
-                              ? 'Belum punya akun? Kamu bisa lanjut ke flow daftar dengan peran yang sama.'
-                              : 'Sudah punya akun? Kamu bisa balik ke flow login tanpa kehilangan pilihan peran.',
+                              ? 'Belum punya akun? Daftar dulu.'
+                              : 'Sudah punya akun? Masuk saja.',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.78),
                             height: 1.5,

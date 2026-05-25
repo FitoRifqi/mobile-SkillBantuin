@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'auth_flow_widgets.dart';
+
 class StatItem extends StatelessWidget {
   final String label;
   final String value;
@@ -15,11 +17,19 @@ class StatItem extends StatelessWidget {
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF2563EB),
+            color: AuthFlowPalette.primary,
           ),
         ),
         const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AuthFlowPalette.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }

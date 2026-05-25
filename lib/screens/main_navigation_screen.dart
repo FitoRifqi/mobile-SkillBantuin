@@ -47,21 +47,34 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final List<BottomNavigationBarItem> items = widget.userRole == UserRole.client
-        ? const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Beranda'),
-            BottomNavigationBarItem(icon: Icon(Icons.add_task_outlined), label: 'Buat Bantuan'),
-            BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Aktivitas'),
-            BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profil'),
-          ]
-        : const [
-            BottomNavigationBarItem(icon: Icon(Icons.travel_explore_outlined), label: 'Cari Tugas'),
-            BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Penawaran'),
-            BottomNavigationBarItem(icon: Icon(Icons.work_history_outlined), label: 'Pekerjaan'),
-            BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profil'),
-          ];
+    final List<BottomNavigationBarItem> items =
+        widget.userRole == UserRole.client
+            ? const [
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.home_outlined), label: 'Beranda'),
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.add_task_outlined), label: 'Buat Bantuan'),
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.assignment_outlined), label: 'Aktivitas'),
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.person_outline), label: 'Profil'),
+              ]
+            : const [
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.travel_explore_outlined),
+                    label: 'Cari Tugas'),
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.assignment_outlined), label: 'Penawaran'),
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.work_history_outlined),
+                    label: 'Pekerjaan'),
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.person_outline), label: 'Profil'),
+              ];
 
     return Scaffold(
       body: _pages[_currentIndex],
@@ -84,9 +97,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             });
           },
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color(0xFF2563EB),
+          selectedItemColor: const Color(0xFF059669),
           unselectedItemColor: Colors.grey[400],
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
+          selectedLabelStyle:
+              const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
           unselectedLabelStyle: const TextStyle(fontSize: 11),
           items: items,
         ),

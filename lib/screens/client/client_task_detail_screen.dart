@@ -42,7 +42,7 @@ class ClientTaskDetailScreen extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+          colors: [Color(0xFF059669), Color(0xFF047857)],
         ),
         borderRadius: BorderRadius.circular(24),
       ),
@@ -82,17 +82,22 @@ class ClientTaskDetailScreen extends StatelessWidget {
       child: Column(
         children: [
           _buildRow('Kategori', task.category),
-          _buildRow('Reward awal', formatRupiah(task.initialBudget)),
+          _buildRow('Budget awal', formatRupiah(task.initialBudget)),
           _buildRow(
-            'Reward deal',
-            task.agreedBudget != null ? formatRupiah(task.agreedBudget!) : 'Belum ada',
+            'Budget deal',
+            task.agreedBudget != null
+                ? formatRupiah(task.agreedBudget!)
+                : 'Belum ada',
           ),
           _buildRow('Deadline', task.deadlineLabel),
           _buildRow('Tipe bantuan', assistanceTypeLabel(task.assistanceType)),
           if (task.location != null) _buildRow('Lokasi', task.location!),
-          if (task.attachmentName != null) _buildRow('Lampiran', task.attachmentName!),
-          _buildRow('Status pembayaran', paymentStatusLabel(task.paymentStatus)),
-          _buildRow('Volunteer terpilih', task.assignedFreelancer ?? 'Belum ada'),
+          if (task.attachmentName != null)
+            _buildRow('Lampiran', task.attachmentName!),
+          _buildRow(
+              'Status pembayaran', paymentStatusLabel(task.paymentStatus)),
+          _buildRow(
+              'Freelancer terpilih', task.assignedFreelancer ?? 'Belum ada'),
           _buildRow('Aksi terdekat', task.nearestAction, isLast: true),
         ],
       ),
@@ -101,7 +106,7 @@ class ClientTaskDetailScreen extends StatelessWidget {
 
   Widget _buildOfferPreview(BuildContext context) {
     return _SectionCard(
-      title: 'Preview Penawaran Volunteer',
+      title: 'Preview Penawaran',
       trailing: task.offers.isEmpty
           ? null
           : TextButton(
@@ -205,7 +210,7 @@ class ClientTaskDetailScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Pembayaran ${result.paymentMethod} dicatat. Status demo lanjut ke ${taskStatusLabel(result.nextTaskStatus)}.',
+                            'Pembayaran ${result.paymentMethod} dicatat.',
                           ),
                         ),
                       );
@@ -216,7 +221,8 @@ class ClientTaskDetailScreen extends StatelessWidget {
             label: const Text('Pembayaran'),
           ),
           OutlinedButton.icon(
-            onPressed: task.status == TaskStatus.completed || task.status == TaskStatus.submitted
+            onPressed: task.status == TaskStatus.completed ||
+                    task.status == TaskStatus.submitted
                 ? () async {
                     final result = await Navigator.push<ReviewSubmissionResult>(
                       context,
@@ -228,7 +234,7 @@ class ClientTaskDetailScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Review ${result.rating} bintang terkirim. Task demo dianggap ${taskStatusLabel(result.finalTaskStatus)}.',
+                            'Review ${result.rating} bintang terkirim.',
                           ),
                         ),
                       );

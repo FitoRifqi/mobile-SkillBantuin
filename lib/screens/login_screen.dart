@@ -120,8 +120,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           Text(
                             isClient
-                                ? 'Kelola pencarian freelancer dan kebutuhan proyekmu.'
-                                : 'Lanjutkan mencari proyek dan peluang kerja yang cocok.',
+                                ? 'Kelola bantuan dan freelancer.'
+                                : 'Cari tugas dan kelola pekerjaan.',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.78),
                               height: 1.5,
@@ -152,8 +152,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       Expanded(
                         child: Text(
                           isClient
-                              ? 'Akun demo client: clientdemo / demo123'
-                              : 'Akun demo freelancer: freelancerdemo / demo123',
+                              ? 'Contoh akun: clientdemo / demo123'
+                              : 'Contoh akun: freelancerdemo / demo123',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.78),
                             height: 1.5,
@@ -193,7 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Masukkan detail akun untuk lanjut ke dashboard.',
+                          'Masukkan akun untuk lanjut.',
                           style: TextStyle(
                             color: AuthFlowPalette.textSecondary,
                             height: 1.5,
@@ -203,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextFormField(
                           controller: _emailController,
                           decoration: _buildInputDecoration(
-                            hintText: 'Username atau email demo',
+                            hintText: 'Username atau email',
                             prefixIcon: Icons.alternate_email_rounded,
                           ),
                           validator: (value) {
@@ -478,8 +478,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 4),
                 Text(
                   isClient
-                      ? 'Fokus ke pencarian freelancer dan pengelolaan proyek'
-                      : 'Fokus ke pencarian proyek dan pengelolaan lamaran',
+                      ? 'Buat tugas dan pilih freelancer'
+                      : 'Cari tugas dan kelola penawaran',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.74),
                     height: 1.4,

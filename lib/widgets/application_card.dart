@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'app_ui.dart';
+import 'auth_flow_widgets.dart';
+import 'status_badge.dart';
+
 class ApplicationCard extends StatelessWidget {
   final String title;
   final String status;
@@ -18,17 +22,13 @@ class ApplicationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color statusColor = status == 'Diterima'
+    final statusColor = status == 'Diterima'
         ? const Color(0xFF10B981)
         : (status == 'Menunggu' ? const Color(0xFFF59E0B) : Colors.red);
 
-    return Container(
+    return AppCard(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -38,25 +38,12 @@ class ApplicationCard extends StatelessWidget {
               Text(
                 title,
                 style: const TextStyle(
-                  fontWeight: FontWeight.bold,
+                  color: AuthFlowPalette.textPrimary,
+                  fontWeight: FontWeight.w800,
                   fontSize: 16,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: statusColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+              StatusBadge(label: status, color: statusColor),
             ],
           ),
           const SizedBox(height: 8),
@@ -64,7 +51,7 @@ class ApplicationCard extends StatelessWidget {
             'Budget: \$$budget',
             style: const TextStyle(
               fontWeight: FontWeight.w600,
-              color: Color(0xFF2563EB),
+              color: Color(0xFF059669),
             ),
           ),
           if (progress > 0) ...[
@@ -91,7 +78,7 @@ class ApplicationCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: progress,
                 backgroundColor: Colors.grey[200],
-                color: const Color(0xFF2563EB),
+                color: const Color(0xFF059669),
                 minHeight: 6,
               ),
             ),

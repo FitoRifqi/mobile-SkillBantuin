@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:skillbantuin/screens/splash_screen.dart';
+import 'package:skillbantuin/widgets/app_ui.dart';
 import 'package:skillbantuin/widgets/auth_flow_widgets.dart';
 
 void main() {
@@ -18,10 +19,10 @@ class SkillBantuinApp extends StatelessWidget {
         primaryColor: AuthFlowPalette.primary,
         colorScheme: const ColorScheme.light(
           primary: AuthFlowPalette.primary,
-          secondary: Color(0xFF3B82F6),
+          secondary: Color(0xFF10B981),
           surface: Colors.white,
         ),
-        scaffoldBackgroundColor: Colors.grey[50],
+        scaffoldBackgroundColor: AppUi.pageBackground,
         fontFamily: 'Inter',
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
@@ -60,9 +61,13 @@ class SkillBantuinApp extends StatelessWidget {
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            minimumSize: const Size.fromHeight(56),
+            elevation: 0,
+            backgroundColor: AuthFlowPalette.primary,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(52),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
             ),
             textStyle: const TextStyle(
               fontSize: 16,
@@ -70,12 +75,49 @@ class SkillBantuinApp extends StatelessWidget {
             ),
           ),
         ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(52),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            foregroundColor: AuthFlowPalette.primary,
+            side: const BorderSide(color: Color(0xFFD1FAE5)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
+            foregroundColor: AuthFlowPalette.primary,
+            minimumSize: const Size(44, 44),
             textStyle: const TextStyle(
               fontWeight: FontWeight.w600,
             ),
+          ),
+        ),
+        chipTheme: ChipThemeData(
+          backgroundColor: const Color(0xFFF8FAFC),
+          selectedColor: AuthFlowPalette.primary.withValues(alpha: 0.14),
+          checkmarkColor: AuthFlowPalette.primary,
+          labelStyle: const TextStyle(
+            color: AuthFlowPalette.textSecondary,
+            fontWeight: FontWeight.w700,
+          ),
+          secondaryLabelStyle: const TextStyle(
+            color: AuthFlowPalette.primary,
+            fontWeight: FontWeight.w800,
+          ),
+          side: const BorderSide(color: Color(0xFFE2E8F0)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        ),
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
         useMaterial3: true,

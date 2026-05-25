@@ -43,8 +43,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           children: [
             CircleAvatar(
               radius: 20,
-              backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.1),
-              child: const Icon(Icons.person_rounded, color: Color(0xFF2563EB)),
+              backgroundColor: const Color(0xFF059669).withValues(alpha: 0.1),
+              child: const Icon(Icons.person_rounded, color: Color(0xFF059669)),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -131,9 +131,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           vertical: 12,
                         ),
                         decoration: BoxDecoration(
-                          color: isMine
-                              ? const Color(0xFF2563EB)
-                              : Colors.white,
+                          color:
+                              isMine ? const Color(0xFF059669) : Colors.white,
                           borderRadius: BorderRadius.circular(18),
                           boxShadow: [
                             BoxShadow(
@@ -190,7 +189,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Lampiran opsional akan dilanjutkan di tahap berikutnya.'),
+                          content: Text(
+                              'Lampiran opsional akan dilanjutkan di tahap berikutnya.'),
                         ),
                       );
                     },
@@ -207,7 +207,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   const SizedBox(width: 8),
                   CircleAvatar(
                     radius: 22,
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: const Color(0xFF059669),
                     child: IconButton(
                       onPressed: () => _sendMessage(currentParty),
                       icon: const Icon(Icons.send_rounded, color: Colors.white),
@@ -244,7 +244,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   void _handleNegotiationAction(String action) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Aksi negosiasi "$action" dipicu untuk demo.'),
+        content: Text('Aksi "$action" dipilih.'),
       ),
     );
   }
@@ -317,7 +317,7 @@ class _NegotiationCard extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               _NegotiationRow(
-                label: 'Reward',
+                label: 'Budget',
                 value: formatRupiah(negotiation.reward),
               ),
               const SizedBox(height: 8),
@@ -367,7 +367,7 @@ class _NegotiationCard extends StatelessWidget {
       case NegotiationStatus.rejected:
         return const Color(0xFFDC2626);
       case NegotiationStatus.countered:
-        return const Color(0xFF7C3AED);
+        return const Color(0xFF16A34A);
     }
   }
 
@@ -432,13 +432,13 @@ class _MiniChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: const Color(0xFFECFDF5),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
         style: const TextStyle(
-          color: Color(0xFF2563EB),
+          color: Color(0xFF059669),
           fontSize: 12,
           fontWeight: FontWeight.w700,
         ),

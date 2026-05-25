@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'app_ui.dart';
+import 'auth_flow_widgets.dart';
+import 'status_badge.dart';
+
 class ProjectCard extends StatelessWidget {
   final String title;
   final String status;
@@ -21,7 +25,7 @@ class ProjectCard extends StatelessWidget {
     Color statusColor;
     switch (status) {
       case 'Sedang Berjalan':
-        statusColor = const Color(0xFF2563EB);
+        statusColor = const Color(0xFF059669);
         break;
       case 'Selesai':
         statusColor = const Color(0xFF10B981);
@@ -33,13 +37,9 @@ class ProjectCard extends StatelessWidget {
         statusColor = Colors.grey;
     }
 
-    return Container(
+    return AppCard(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -49,24 +49,14 @@ class ProjectCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: statusColor,
-                    fontWeight: FontWeight.w600,
+                  style: const TextStyle(
+                    color: AuthFlowPalette.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
                   ),
                 ),
               ),
+              StatusBadge(label: status, color: statusColor),
             ],
           ),
           const SizedBox(height: 12),
@@ -74,9 +64,20 @@ class ProjectCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Progress', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                Text('${(progress * 100).toInt()}%',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                const Text(
+                  'Progress',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AuthFlowPalette.textSecondary,
+                  ),
+                ),
+                Text(
+                  '${(progress * 100).toInt()}%',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 4),
@@ -85,7 +86,7 @@ class ProjectCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: progress,
                 backgroundColor: Colors.grey[200],
-                color: const Color(0xFF2563EB),
+                color: AuthFlowPalette.primary,
                 minHeight: 6,
               ),
             ),
@@ -96,7 +97,10 @@ class ProjectCard extends StatelessWidget {
             children: [
               Text(
                 'Budget: \$$budget',
-                style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF2563EB)),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: AuthFlowPalette.primary,
+                ),
               ),
               Text(
                 'Freelancer: $assignedTo',

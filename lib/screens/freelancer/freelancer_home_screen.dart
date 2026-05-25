@@ -27,9 +27,8 @@ class FreelancerHomeScreen extends StatelessWidget {
         children: [
           DashboardHeroCard(
             greeting: 'Cari Tugas Freelancer',
-            title: 'Temukan tugas yang cocok, kirim penawaran, lalu lanjut ke pekerjaan aktif.',
-            description:
-                'Beranda freelancer sekarang difokuskan untuk demo UAS: cari tugas, cek status penawaran, pantau pekerjaan, dan lihat progres pendapatan secara ringkas.',
+            title: 'Cari tugas. Kirim penawaran.',
+            description: 'Pantau lamaran, pekerjaan, dan pendapatan.',
             primaryActionLabel: 'Cari Tugas',
             primaryActionIcon: Icons.travel_explore_rounded,
             onPrimaryAction: () {
@@ -80,7 +79,8 @@ class FreelancerHomeScreen extends StatelessWidget {
               );
             },
             decoration: InputDecoration(
-              hintText: 'Cari tugas berdasarkan kategori, budget, atau deadline...',
+              hintText:
+                  'Cari tugas berdasarkan kategori, budget, atau deadline...',
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: IconButton(
                 onPressed: () {
@@ -99,25 +99,37 @@ class FreelancerHomeScreen extends StatelessWidget {
           DashboardMetricGrid(
             metrics: [
               DashboardMetricData(
-                label: 'Tugas Tersedia',
+                label: 'Tersedia',
                 value: tasks.length.toString().padLeft(2, '0'),
                 helperText: 'Siap dilamar',
                 icon: Icons.travel_explore_rounded,
                 color: AuthFlowPalette.primary,
               ),
               DashboardMetricData(
-                label: 'Penawaran Aktif',
-                value: applications.where((item) => item.status == OfferStatus.pending || item.status == OfferStatus.countered).length.toString().padLeft(2, '0'),
-                helperText: 'Perlu follow-up',
+                label: 'Penawaran',
+                value: applications
+                    .where((item) =>
+                        item.status == OfferStatus.pending ||
+                        item.status == OfferStatus.countered)
+                    .length
+                    .toString()
+                    .padLeft(2, '0'),
+                helperText: 'Follow-up',
                 icon: Icons.assignment_turned_in_rounded,
                 color: const Color(0xFFF59E0B),
               ),
               DashboardMetricData(
-                label: 'Pekerjaan Jalan',
-                value: works.where((item) => item.status == WorkStatus.inProgress || item.status == WorkStatus.waitingConfirmation).length.toString().padLeft(2, '0'),
+                label: 'Berjalan',
+                value: works
+                    .where((item) =>
+                        item.status == WorkStatus.inProgress ||
+                        item.status == WorkStatus.waitingConfirmation)
+                    .length
+                    .toString()
+                    .padLeft(2, '0'),
                 helperText: 'Jaga deadline',
                 icon: Icons.work_history_rounded,
-                color: const Color(0xFF7C3AED),
+                color: const Color(0xFF16A34A),
               ),
               DashboardMetricData(
                 label: 'Pendapatan',
@@ -133,14 +145,14 @@ class FreelancerHomeScreen extends StatelessWidget {
           const SizedBox(height: 28),
           const DashboardSectionHeader(
             title: 'Progress Profil',
-            subtitle: 'Semakin lengkap profilmu, semakin tinggi peluang dipilih klien.',
+            subtitle: 'Lengkapi profil agar lebih dipercaya.',
           ),
           const SizedBox(height: 14),
           const _ProfileStrengthCard(),
           const SizedBox(height: 28),
           DashboardSectionHeader(
             title: 'Tugas Rekomendasi',
-            subtitle: 'Kurasi tugas yang paling relevan dengan skill dan kapasitasmu saat ini.',
+            subtitle: 'Tugas yang cocok untukmu.',
             actionLabel: 'Cari Semua',
             onActionTap: () {
               Navigator.push(
@@ -159,7 +171,7 @@ class FreelancerHomeScreen extends StatelessWidget {
           const SizedBox(height: 16),
           DashboardSectionHeader(
             title: 'Status Penawaran',
-            subtitle: 'Supaya kamu tahu penawaran mana yang perlu direspon lebih dulu.',
+            subtitle: 'Lamaran yang perlu dicek.',
             actionLabel: 'Lihat Semua',
             onActionTap: () {
               Navigator.push(
@@ -188,7 +200,7 @@ class FreelancerHomeScreen extends StatelessWidget {
           const SizedBox(height: 16),
           const DashboardSectionHeader(
             title: 'Agenda Terdekat',
-            subtitle: 'Deadline dan follow-up yang perlu kamu jaga hari ini.',
+            subtitle: 'Deadline hari ini.',
           ),
           const SizedBox(height: 14),
           ...works.take(3).map((agenda) => Padding(
@@ -258,7 +270,7 @@ class _ProfileStrengthCard extends StatelessWidget {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'Tambahkan 2 portofolio lagi dan verifikasi identitas untuk meningkatkan trust.',
+                      'Tambah portfolio dan verifikasi identitas.',
                       style: TextStyle(
                         color: AuthFlowPalette.textSecondary,
                         height: 1.5,
@@ -376,7 +388,8 @@ class _RecommendedProjectCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
@@ -396,9 +409,12 @@ class _RecommendedProjectCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _LiteChip(icon: Icons.flash_on_rounded, label: data.budgetRangeLabel),
-              _LiteChip(icon: Icons.schedule_rounded, label: data.deadlineLabel),
-              _LiteChip(icon: Icons.access_time_rounded, label: data.postedLabel),
+              _LiteChip(
+                  icon: Icons.flash_on_rounded, label: data.budgetRangeLabel),
+              _LiteChip(
+                  icon: Icons.schedule_rounded, label: data.deadlineLabel),
+              _LiteChip(
+                  icon: Icons.access_time_rounded, label: data.postedLabel),
             ],
           ),
           const SizedBox(height: 16),
@@ -460,9 +476,11 @@ class _PipelineTile extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: offerStatusColor(data.status).withValues(alpha: 0.12),
+                      color:
+                          offerStatusColor(data.status).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
@@ -523,10 +541,12 @@ class _AgendaCard extends StatelessWidget {
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: workStatusColor(data.status).withValues(alpha: 0.12),
+                      color:
+                          workStatusColor(data.status).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Icon(Icons.work_outline_rounded, color: workStatusColor(data.status)),
+                    child: Icon(Icons.work_outline_rounded,
+                        color: workStatusColor(data.status)),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -554,7 +574,8 @@ class _AgendaCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Align(
-                alignment: compact ? Alignment.centerLeft : Alignment.centerRight,
+                alignment:
+                    compact ? Alignment.centerLeft : Alignment.centerRight,
                 child: Text(
                   '${data.deadlineLabel} • ${formatRupiah(data.agreedBudget)}',
                   textAlign: compact ? TextAlign.left : TextAlign.right,

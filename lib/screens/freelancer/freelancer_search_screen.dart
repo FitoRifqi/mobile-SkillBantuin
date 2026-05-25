@@ -29,9 +29,14 @@ class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
     final tasks = _taskService.getAvailableTasks();
     final filteredTasks = tasks.where((task) {
       final matchesSearch = _searchController.text.trim().isEmpty ||
-          task.title.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-          task.category.toLowerCase().contains(_searchController.text.toLowerCase());
-      final matchesCategory = _selectedCategory == null || task.category == _selectedCategory;
+          task.title
+              .toLowerCase()
+              .contains(_searchController.text.toLowerCase()) ||
+          task.category
+              .toLowerCase()
+              .contains(_searchController.text.toLowerCase());
+      final matchesCategory =
+          _selectedCategory == null || task.category == _selectedCategory;
       return matchesSearch && matchesCategory;
     }).toList();
 
@@ -170,7 +175,7 @@ class _TaskCard extends StatelessWidget {
               const SizedBox(width: 12),
               StatusBadge(
                 label: task.category,
-                color: const Color(0xFF2563EB),
+                color: const Color(0xFF059669),
               ),
             ],
           ),
@@ -179,10 +184,15 @@ class _TaskCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _FilterChip(icon: Icons.wallet_outlined, label: formatRupiah(task.initialBudget)),
-              _FilterChip(icon: Icons.schedule_rounded, label: task.deadlineLabel),
-              _FilterChip(icon: Icons.person_outline_rounded, label: task.clientName),
-              _FilterChip(icon: Icons.location_on_outlined, label: task.location),
+              _FilterChip(
+                  icon: Icons.wallet_outlined,
+                  label: formatRupiah(task.initialBudget)),
+              _FilterChip(
+                  icon: Icons.schedule_rounded, label: task.deadlineLabel),
+              _FilterChip(
+                  icon: Icons.person_outline_rounded, label: task.clientName),
+              _FilterChip(
+                  icon: Icons.location_on_outlined, label: task.location),
             ],
           ),
           const SizedBox(height: 14),
@@ -190,7 +200,7 @@ class _TaskCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '${task.applicantsCount} volunteer sudah melamar • ${task.postedLabel}',
+                  '${task.applicantsCount} freelancer melamar • ${task.postedLabel}',
                   style: const TextStyle(
                     color: Color(0xFF64748B),
                     fontWeight: FontWeight.w600,
@@ -237,7 +247,7 @@ class _FilterChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF2563EB)),
+          Icon(icon, size: 16, color: const Color(0xFF059669)),
           const SizedBox(width: 8),
           Text(
             label,

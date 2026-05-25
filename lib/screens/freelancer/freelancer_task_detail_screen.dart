@@ -26,7 +26,7 @@ class FreelancerTaskDetailScreen extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                colors: [Color(0xFF059669), Color(0xFF047857)],
               ),
               borderRadius: BorderRadius.circular(24),
             ),
@@ -67,13 +67,20 @@ class FreelancerTaskDetailScreen extends StatelessWidget {
             child: Column(
               children: [
                 _DetailRow(label: 'Kategori', value: task.category),
-                _DetailRow(label: 'Reward awal', value: formatRupiah(task.initialBudget)),
+                _DetailRow(
+                    label: 'Budget awal',
+                    value: formatRupiah(task.initialBudget)),
                 _DetailRow(label: 'Deadline', value: task.deadlineLabel),
-                _DetailRow(label: 'Tipe bantuan', value: assistanceTypeLabel(task.assistanceType)),
+                _DetailRow(
+                    label: 'Tipe bantuan',
+                    value: assistanceTypeLabel(task.assistanceType)),
                 _DetailRow(label: 'Client', value: task.clientName),
                 _DetailRow(label: 'Lokasi', value: task.location),
                 _DetailRow(label: 'Diposting', value: task.postedLabel),
-                _DetailRow(label: 'Peminat', value: '${task.applicantsCount} volunteer', isLast: true),
+                _DetailRow(
+                    label: 'Peminat',
+                    value: '${task.applicantsCount} freelancer',
+                    isLast: true),
               ],
             ),
           ),
@@ -86,7 +93,7 @@ class FreelancerTaskDetailScreen extends StatelessWidget {
               children: [
                 StatusBadge(
                   label: task.category,
-                  color: const Color(0xFF2563EB),
+                  color: const Color(0xFF059669),
                 ),
                 StatusBadge(
                   label: task.budgetRangeLabel,

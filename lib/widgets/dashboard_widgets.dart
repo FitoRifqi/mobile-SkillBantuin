@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_ui.dart';
 import 'auth_flow_widgets.dart';
 
 class DashboardScaffold extends StatelessWidget {
@@ -13,12 +14,12 @@ class DashboardScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppUi.pageBackground,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              padding: AppUi.pagePadding,
               sliver: SliverToBoxAdapter(child: body),
             ),
           ],
@@ -57,13 +58,13 @@ class DashboardHeroCard extends StatelessWidget {
         final compact = constraints.maxWidth < 420;
 
         return Container(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(compact ? 20 : 24),
           decoration: BoxDecoration(
             gradient: AuthFlowPalette.backgroundGradient,
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(26),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF1D4ED8).withValues(alpha: 0.22),
+                color: const Color(0xFF047857).withValues(alpha: 0.22),
                 blurRadius: 30,
                 offset: const Offset(0, 16),
               ),
@@ -117,6 +118,7 @@ class DashboardHeroCard extends StatelessWidget {
                         horizontal: 16,
                         vertical: 14,
                       ),
+                      minimumSize: const Size(132, 48),
                     ),
                   ),
                   ...quickActions.map(
@@ -134,6 +136,7 @@ class DashboardHeroCard extends StatelessWidget {
                           horizontal: 14,
                           vertical: 14,
                         ),
+                        minimumSize: const Size(112, 48),
                       ),
                     ),
                   ),
@@ -184,6 +187,8 @@ class _HeroCopy extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           description,
+          maxLines: 4,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.82),
             height: 1.6,

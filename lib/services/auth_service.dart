@@ -1,122 +1,149 @@
-import '../models/app_user.dart';
+import 'package:dio/dio.dart';
+
+import '../models/user_model.dart';
 import '../models/user_role.dart';
+import 'api_service.dart';
 import 'session_service.dart';
+import 'token_service.dart';
 
 class AuthService {
   AuthService({
+    ApiService? apiService,
+    TokenService? tokenService,
     SessionService? sessionService,
-  }) : _sessionService = sessionService ?? SessionService();
+  })  : _tokenService = tokenService ?? const TokenService(),
+        _sessionService = sessionService ?? SessionService(),
+        _apiService = apiService ?? ApiService(tokenService: tokenService);
 
+  final ApiService _apiService;
+  final TokenService _tokenService;
   final SessionService _sessionService;
 
-  static final List<_MockAccount> _accounts = [
-    const _MockAccount(
-      id: 'client-001',
-      fullName: 'Nadia Client',
-      email: 'client@skillbantuin.demo',
-      username: 'clientdemo',
-      phoneNumber: '081234567890',
-      password: 'demo123',
-      role: UserRole.client,
-    ),
-    const _MockAccount(
-      id: 'freelancer-001',
-      fullName: 'Raka Freelancer',
-      email: 'freelancer@skillbantuin.demo',
-      username: 'freelancerdemo',
-      phoneNumber: '089876543210',
-      password: 'demo123',
-      role: UserRole.freelancer,
-    ),
-  ];
-
-  Future<AppUser> login({
-    required String identity,
-    required String password,
-    required UserRole role,
-    required bool rememberMe,
-  }) async {
-    await Future<void>.delayed(const Duration(milliseconds: 900));
-
-    final normalizedIdentity = identity.trim().toLowerCase();
-    final account = _accounts.where((item) => item.role == role).cast<_MockAccount?>().firstWhere(
-          (item) =>
-              item != null &&
-              (item.username.toLowerCase() == normalizedIdentity ||
-                  item.email.toLowerCase() == normalizedIdentity),
-          orElse: () => null,
-        );
-
-    if (account == null || account.password != password) {
-      throw const AuthException(
-        'Akun tidak ditemukan atau password salah untuk peran yang dipilih.',
-      );
-    }
-
-    final user = account.toAppUser();
-    if (rememberMe) {
-      await _sessionService.saveSession(user);
-    } else {
-      await _sessionService.clearSession();
-    }
-
-    return user;
-  }
-
-  Future<AppUser> register({
-    required String fullName,
+  Future<UserModel> login({
     required String email,
-    required String username,
-    required String phoneNumber,
     required String password,
-    required UserRole role,
-    required bool keepSignedIn,
   }) async {
-    await Future<void>.delayed(const Duration(milliseconds: 900));
-
-    final normalizedEmail = email.trim().toLowerCase();
-    final normalizedUsername = username.trim().toLowerCase();
-
-    final alreadyExists = _accounts.any(
-      (item) =>
-          item.email.toLowerCase() == normalizedEmail ||
-          item.username.toLowerCase() == normalizedUsername,
-    );
-
-    if (alreadyExists) {
-      throw const AuthException(
-        'Email atau username sudah dipakai. Gunakan data demo yang berbeda.',
+    try {
+      final response = await _apiService.dio.post<Map<String, dynamic>>(
+        '/login',
+        data: {
+          'email': email.trim(),
+          'password': password,
+        },
       );
+
+      return _saveAuthResponse(response.data);
+    } on DioException catch (error) {
+      throw AuthException(_getErrorMessage(error));
+    } catch (_) {
+      throw const AuthException('Terjadi kendala saat login. Coba lagi sebentar.');
     }
-
-    final account = _MockAccount(
-      id: 'mock-${DateTime.now().millisecondsSinceEpoch}',
-      fullName: fullName.trim(),
-      email: normalizedEmail,
-      username: username.trim(),
-      phoneNumber: phoneNumber.trim(),
-      password: password,
-      role: role,
-    );
-    _accounts.add(account);
-
-    final user = account.toAppUser();
-
-    if (keepSignedIn) {
-      await _sessionService.saveSession(user);
-    } else {
-      await _sessionService.clearSession();
-    }
-
-    return user;
   }
 
-  Future<AppUser?> getSavedSession() {
+  Future<UserModel> register({
+    required String name,
+    required String email,
+    required String password,
+    required UserRole role,
+    required String phone,
+  }) async {
+    try {
+      final response = await _apiService.dio.post<Map<String, dynamic>>(
+        '/register',
+        data: {
+          'name': name.trim(),
+          'email': email.trim(),
+          'password': password,
+          'role': role.name,
+          'phone': phone.trim(),
+        },
+      );
+
+      return _saveAuthResponse(response.data);
+    } on DioException catch (error) {
+      throw AuthException(_getErrorMessage(error));
+    } catch (_) {
+      throw const AuthException(
+        'Terjadi kendala saat membuat akun. Coba lagi sebentar.',
+      );
+    }
+  }
+
+  Future<void> logout() async {
+    final hasToken = await _tokenService.hasToken();
+    if (hasToken) {
+      try {
+        await _apiService.dio.post<void>('/logout');
+      } on DioException {
+        // Token lokal tetap dibersihkan walaupun request logout gagal.
+      }
+    }
+
+    await _tokenService.deleteToken();
+    await _sessionService.clearSession();
+  }
+
+  Future<UserModel> getProfile() async {
+    try {
+      final response = await _apiService.dio.get<Map<String, dynamic>>('/profile');
+      final data = response.data;
+      final userJson = data?['user'] ?? data;
+
+      if (userJson is! Map<String, dynamic>) {
+        throw const AuthException('Data profil dari server tidak valid.');
+      }
+
+      final user = UserModel.fromJson(userJson);
+      await _sessionService.saveSession(user);
+      return user;
+    } on AuthException {
+      rethrow;
+    } on DioException catch (error) {
+      throw AuthException(_getErrorMessage(error));
+    } catch (_) {
+      throw const AuthException('Terjadi kendala saat mengambil profil.');
+    }
+  }
+
+  Future<UserModel?> getSavedSession() {
     return _sessionService.getSession();
   }
 
-  Future<void> logout() {
-    return _sessionService.clearSession();
+  Future<UserModel> _saveAuthResponse(Map<String, dynamic>? data) async {
+    final token = data?['token'] as String?;
+    final userJson = data?['user'];
+
+    if (token == null || token.isEmpty || userJson is! Map<String, dynamic>) {
+      throw const AuthException('Response auth dari server tidak valid.');
+    }
+
+    final user = UserModel.fromJson(userJson);
+    await _tokenService.saveToken(token);
+    await _sessionService.saveSession(user);
+    return user;
+  }
+
+  String _getErrorMessage(DioException error) {
+    final data = error.response?.data;
+    if (data is Map<String, dynamic>) {
+      final message = data['message'];
+      if (message is String && message.isNotEmpty) return message;
+
+      final errors = data['errors'];
+      if (errors is Map<String, dynamic> && errors.isNotEmpty) {
+        final firstError = errors.values.first;
+        if (firstError is List && firstError.isNotEmpty) {
+          return firstError.first.toString();
+        }
+        return firstError.toString();
+      }
+    }
+
+    if (error.type == DioExceptionType.connectionError) {
+      return 'Tidak bisa terhubung ke server Laravel.';
+    }
+
+    return 'Request gagal. Coba lagi sebentar.';
   }
 }
 
@@ -127,36 +154,4 @@ class AuthException implements Exception {
 
   @override
   String toString() => message;
-}
-
-class _MockAccount {
-  final String id;
-  final String fullName;
-  final String email;
-  final String username;
-  final String phoneNumber;
-  final String password;
-  final UserRole role;
-
-  const _MockAccount({
-    required this.id,
-    required this.fullName,
-    required this.email,
-    required this.username,
-    required this.phoneNumber,
-    required this.password,
-    required this.role,
-  });
-
-  AppUser toAppUser() {
-    return AppUser(
-      id: id,
-      fullName: fullName,
-      email: email,
-      username: username,
-      phoneNumber: phoneNumber,
-      role: role,
-      token: 'mock-token-$id',
-    );
-  }
 }

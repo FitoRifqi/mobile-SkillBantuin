@@ -194,7 +194,7 @@ class _WorkCard extends StatelessWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        'Hasil dikirim. Status demo lanjut ke ${taskStatusLabel(result.nextTaskStatus)} dan menunggu review client.',
+                        'Hasil dikirim. Status lanjut ke ${taskStatusLabel(result.nextTaskStatus)} dan menunggu review client.',
                       ),
                     ),
                   );

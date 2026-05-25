@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../models/task_models.dart';
-import '../../services/mock_task_service.dart';
+import '../../services/category_service.dart';
+import '../../services/project_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/status_badge.dart';
 import 'freelancer_task_detail_screen.dart';
@@ -14,9 +15,20 @@ class FreelancerSearchScreen extends StatefulWidget {
 }
 
 class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
-  final _taskService = MockTaskService();
+  final _categoryService = CategoryService();
+  final _projectService = ProjectService();
   final _searchController = TextEditingController();
   String? _selectedCategory;
+  bool _isLoading = true;
+  String? _errorMessage;
+  List<AvailableTask> _tasks = const [];
+  List<HelperCategory> _categories = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExploreData();
+  }
 
   @override
   void dispose() {
@@ -24,14 +36,47 @@ class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
     super.dispose();
   }
 
+  Future<void> _loadExploreData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final projectsFuture = _projectService.getProjects();
+      final categoriesFuture = _categoryService.getCategories();
+
+      final projects = await projectsFuture;
+      final categories = await categoriesFuture;
+      if (!mounted) return;
+      setState(() {
+        _tasks = projects.map((project) => project.toAvailableTask()).toList();
+        _categories =
+            categories.map((category) => category.toHelperCategory()).toList();
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Data tugas belum bisa dimuat dari server.';
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final tasks = _taskService.getAvailableTasks();
+    final tasks = _tasks;
     final filteredTasks = tasks.where((task) {
       final matchesSearch = _searchController.text.trim().isEmpty ||
-          task.title.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-          task.category.toLowerCase().contains(_searchController.text.toLowerCase());
-      final matchesCategory = _selectedCategory == null || task.category == _selectedCategory;
+          task.title
+              .toLowerCase()
+              .contains(_searchController.text.toLowerCase()) ||
+          task.category
+              .toLowerCase()
+              .contains(_searchController.text.toLowerCase());
+      final matchesCategory =
+          _selectedCategory == null || task.category == _selectedCategory;
       return matchesSearch && matchesCategory;
     }).toList();
 
@@ -55,17 +100,34 @@ class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
             ),
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: filteredTasks
-                  .map(
-                    (task) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _TaskCard(task: task),
-                    ),
+            child: _isLoading
+                ? const _SearchStateView(
+                    message: 'Memuat tugas dari backend Laravel...',
+                    showLoader: true,
                   )
-                  .toList(),
-            ),
+                : _errorMessage != null
+                    ? _SearchStateView(
+                        message: _errorMessage!,
+                        icon: Icons.error_outline_rounded,
+                        actionLabel: 'Coba Lagi',
+                        onActionTap: _loadExploreData,
+                      )
+                    : filteredTasks.isEmpty
+                        ? const _SearchStateView(
+                            message: 'Tidak ada tugas yang cocok.',
+                            icon: Icons.inbox_outlined,
+                          )
+                        : ListView(
+                            padding: const EdgeInsets.all(16),
+                            children: filteredTasks
+                                .map(
+                                  (task) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child: _TaskCard(task: task),
+                                  ),
+                                )
+                                .toList(),
+                          ),
           ),
         ],
       ),
@@ -73,7 +135,7 @@ class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
   }
 
   void _showFilterSheet(BuildContext context) {
-    final categories = _taskService.getClientCategories();
+    final categories = _categories;
 
     showModalBottomSheet<void>(
       context: context,
@@ -112,6 +174,56 @@ class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class _SearchStateView extends StatelessWidget {
+  final String message;
+  final bool showLoader;
+  final IconData icon;
+  final String? actionLabel;
+  final VoidCallback? onActionTap;
+
+  const _SearchStateView({
+    required this.message,
+    this.showLoader = false,
+    this.icon = Icons.sync_rounded,
+    this.actionLabel,
+    this.onActionTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showLoader)
+              const CircularProgressIndicator()
+            else
+              Icon(icon, size: 42, color: const Color(0xFF2563EB)),
+            const SizedBox(height: 14),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (actionLabel != null && onActionTap != null) ...[
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: onActionTap,
+                child: Text(actionLabel!),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -179,10 +291,15 @@ class _TaskCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _FilterChip(icon: Icons.wallet_outlined, label: formatRupiah(task.initialBudget)),
-              _FilterChip(icon: Icons.schedule_rounded, label: task.deadlineLabel),
-              _FilterChip(icon: Icons.person_outline_rounded, label: task.clientName),
-              _FilterChip(icon: Icons.location_on_outlined, label: task.location),
+              _FilterChip(
+                  icon: Icons.wallet_outlined,
+                  label: formatRupiah(task.initialBudget)),
+              _FilterChip(
+                  icon: Icons.schedule_rounded, label: task.deadlineLabel),
+              _FilterChip(
+                  icon: Icons.person_outline_rounded, label: task.clientName),
+              _FilterChip(
+                  icon: Icons.location_on_outlined, label: task.location),
             ],
           ),
           const SizedBox(height: 14),

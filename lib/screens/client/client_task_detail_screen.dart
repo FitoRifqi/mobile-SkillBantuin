@@ -2,19 +2,59 @@ import 'package:flutter/material.dart';
 
 import '../../models/task_models.dart';
 import '../../models/workflow_results.dart';
+import '../../services/project_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/status_badge.dart';
 import 'client_offers_screen.dart';
 import 'client_payment_screen.dart';
 import 'client_review_screen.dart';
 
-class ClientTaskDetailScreen extends StatelessWidget {
+class ClientTaskDetailScreen extends StatefulWidget {
   final ClientTask task;
 
   const ClientTaskDetailScreen({
     super.key,
     required this.task,
   });
+
+  @override
+  State<ClientTaskDetailScreen> createState() => _ClientTaskDetailScreenState();
+}
+
+class _ClientTaskDetailScreenState extends State<ClientTaskDetailScreen> {
+  final _projectService = ProjectService();
+  late ClientTask task;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    task = widget.task;
+    _loadProjectDetail();
+  }
+
+  Future<void> _loadProjectDetail() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final detail = await _projectService.getProjectDetail(task.id);
+      if (!mounted) return;
+      setState(() {
+        task = detail.toClientTask();
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Detail dari server belum bisa dimuat.';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +65,16 @@ class ClientTaskDetailScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (_isLoading || _errorMessage != null) ...[
+            _DetailStateBanner(
+              isLoading: _isLoading,
+              message: _isLoading
+                  ? 'Memuat detail dari backend Laravel...'
+                  : _errorMessage!,
+              onRetry: _errorMessage == null ? null : _loadProjectDetail,
+            ),
+            const SizedBox(height: 16),
+          ],
           _buildHeaderCard(),
           const SizedBox(height: 16),
           _buildDetailCard(),
@@ -85,14 +135,19 @@ class ClientTaskDetailScreen extends StatelessWidget {
           _buildRow('Reward awal', formatRupiah(task.initialBudget)),
           _buildRow(
             'Reward deal',
-            task.agreedBudget != null ? formatRupiah(task.agreedBudget!) : 'Belum ada',
+            task.agreedBudget != null
+                ? formatRupiah(task.agreedBudget!)
+                : 'Belum ada',
           ),
           _buildRow('Deadline', task.deadlineLabel),
           _buildRow('Tipe bantuan', assistanceTypeLabel(task.assistanceType)),
           if (task.location != null) _buildRow('Lokasi', task.location!),
-          if (task.attachmentName != null) _buildRow('Lampiran', task.attachmentName!),
-          _buildRow('Status pembayaran', paymentStatusLabel(task.paymentStatus)),
-          _buildRow('Volunteer terpilih', task.assignedFreelancer ?? 'Belum ada'),
+          if (task.attachmentName != null)
+            _buildRow('Lampiran', task.attachmentName!),
+          _buildRow(
+              'Status pembayaran', paymentStatusLabel(task.paymentStatus)),
+          _buildRow(
+              'Volunteer terpilih', task.assignedFreelancer ?? 'Belum ada'),
           _buildRow('Aksi terdekat', task.nearestAction, isLast: true),
         ],
       ),
@@ -205,7 +260,7 @@ class ClientTaskDetailScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Pembayaran ${result.paymentMethod} dicatat. Status demo lanjut ke ${taskStatusLabel(result.nextTaskStatus)}.',
+                            'Pembayaran ${result.paymentMethod} dicatat. Status lanjut ke ${taskStatusLabel(result.nextTaskStatus)}.',
                           ),
                         ),
                       );
@@ -216,7 +271,8 @@ class ClientTaskDetailScreen extends StatelessWidget {
             label: const Text('Pembayaran'),
           ),
           OutlinedButton.icon(
-            onPressed: task.status == TaskStatus.completed || task.status == TaskStatus.submitted
+            onPressed: task.status == TaskStatus.completed ||
+                    task.status == TaskStatus.submitted
                 ? () async {
                     final result = await Navigator.push<ReviewSubmissionResult>(
                       context,
@@ -228,7 +284,7 @@ class ClientTaskDetailScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Review ${result.rating} bintang terkirim. Task demo dianggap ${taskStatusLabel(result.finalTaskStatus)}.',
+                            'Review ${result.rating} bintang terkirim. Task dianggap ${taskStatusLabel(result.finalTaskStatus)}.',
                           ),
                         ),
                       );
@@ -274,6 +330,63 @@ class ClientTaskDetailScreen extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailStateBanner extends StatelessWidget {
+  final bool isLoading;
+  final String message;
+  final VoidCallback? onRetry;
+
+  const _DetailStateBanner({
+    required this.isLoading,
+    required this.message,
+    this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          if (isLoading)
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2.2),
+            )
+          else
+            const Icon(Icons.error_outline_rounded, color: Color(0xFF2563EB)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (onRetry != null)
+            TextButton(
+              onPressed: onRetry,
+              child: const Text('Coba Lagi'),
+            ),
         ],
       ),
     );

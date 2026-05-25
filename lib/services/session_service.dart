@@ -2,24 +2,24 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/app_user.dart';
+import '../models/user_model.dart';
 
 class SessionService {
   static const String _sessionKey = 'skillbantuin_session';
   static const String _onboardingKey = 'skillbantuin_onboarding_seen';
 
-  Future<void> saveSession(AppUser user) async {
+  Future<void> saveSession(UserModel user) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_sessionKey, jsonEncode(user.toJson()));
   }
 
-  Future<AppUser?> getSession() async {
+  Future<UserModel?> getSession() async {
     final prefs = await SharedPreferences.getInstance();
     final rawSession = prefs.getString(_sessionKey);
     if (rawSession == null || rawSession.isEmpty) return null;
 
     try {
-      return AppUser.fromJson(
+      return UserModel.fromJson(
         jsonDecode(rawSession) as Map<String, dynamic>,
       );
     } catch (_) {

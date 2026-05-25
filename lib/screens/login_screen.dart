@@ -50,11 +50,9 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await _authService.login(
-        identity: _emailController.text,
+      final user = await _authService.login(
+        email: _emailController.text,
         password: _passwordController.text,
-        role: _selectedRole,
-        rememberMe: _rememberMe,
       );
 
       if (!mounted) return;
@@ -71,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (_) => MainNavigationScreen(userRole: _selectedRole),
+          builder: (_) => MainNavigationScreen(userRole: user.role),
         ),
         (route) => false,
       );
@@ -152,8 +150,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       Expanded(
                         child: Text(
                           isClient
-                              ? 'Akun demo client: clientdemo / demo123'
-                              : 'Akun demo freelancer: freelancerdemo / demo123',
+                              ? 'Gunakan email akun client yang terdaftar di backend Laravel.'
+                              : 'Gunakan email akun freelancer yang terdaftar di backend Laravel.',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.78),
                             height: 1.5,
@@ -203,12 +201,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextFormField(
                           controller: _emailController,
                           decoration: _buildInputDecoration(
-                            hintText: 'Username atau email demo',
+                            hintText: 'Email',
                             prefixIcon: Icons.alternate_email_rounded,
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Username atau email tidak boleh kosong';
+                              return 'Email tidak boleh kosong';
                             }
                             return null;
                           },

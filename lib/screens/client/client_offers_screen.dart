@@ -40,7 +40,8 @@ class ClientOffersScreen extends StatelessWidget {
           if (task.offers.isEmpty)
             const _InfoPanel(
               title: 'Belum ada penawaran',
-              subtitle: 'Begitu volunteer mengajukan offer, daftar ini akan terisi otomatis.',
+              subtitle:
+                  'Begitu volunteer mengajukan offer, daftar ini akan terisi otomatis.',
             ),
         ],
       ),
@@ -213,8 +214,9 @@ class _OfferCard extends StatelessWidget {
                   final rooms = MockChatService().getClientRooms();
                   final matchedRooms =
                       rooms.where((item) => item.taskId == task.id).toList();
-                  final room =
-                      matchedRooms.isNotEmpty ? matchedRooms.first : rooms.first;
+                  final room = matchedRooms.isNotEmpty
+                      ? matchedRooms.first
+                      : rooms.first;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -246,7 +248,7 @@ class _OfferCard extends StatelessWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                'Offer ${offer.freelancerName} diteruskan ke pembayaran. Status demo lanjut ke ${taskStatusLabel(result.nextTaskStatus)}.',
+                                'Offer ${offer.freelancerName} diteruskan ke pembayaran. Status lanjut ke ${taskStatusLabel(result.nextTaskStatus)}.',
                               ),
                             ),
                           );
@@ -258,14 +260,14 @@ class _OfferCard extends StatelessWidget {
               OutlinedButton(
                 onPressed: () => _showMessage(
                   context,
-                  'Penawaran ${offer.freelancerName} ditandai sebagai ditolak secara demo.',
+                  'Penawaran ${offer.freelancerName} ditandai sebagai ditolak.',
                 ),
                 child: const Text('Tolak'),
               ),
               TextButton(
                 onPressed: () => _showMessage(
                   context,
-                  'Flow tawar balik penuh akan dipusatkan di chat pada Tahap 5.',
+                  'Tawar balik bisa dilanjutkan melalui chat.',
                 ),
                 child: const Text('Tawar Balik'),
               ),

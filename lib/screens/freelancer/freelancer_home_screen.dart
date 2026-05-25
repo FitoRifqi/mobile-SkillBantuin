@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/task_models.dart';
 import '../../services/mock_task_service.dart';
+import '../../services/project_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/auth_flow_widgets.dart';
 import '../../widgets/dashboard_widgets.dart';
@@ -10,13 +11,51 @@ import 'freelancer_search_screen.dart';
 import 'freelancer_task_detail_screen.dart';
 import 'freelancer_work_screen.dart';
 
-class FreelancerHomeScreen extends StatelessWidget {
+class FreelancerHomeScreen extends StatefulWidget {
   const FreelancerHomeScreen({super.key});
+
+  @override
+  State<FreelancerHomeScreen> createState() => _FreelancerHomeScreenState();
+}
+
+class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
+  final _projectService = ProjectService();
+  bool _isLoading = true;
+  String? _errorMessage;
+  List<AvailableTask> _tasks = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProjects();
+  }
+
+  Future<void> _loadProjects() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final projects = await _projectService.getProjects();
+      if (!mounted) return;
+      setState(() {
+        _tasks = projects.map((project) => project.toAvailableTask()).toList();
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Data tugas dari server belum bisa dimuat.';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final service = MockTaskService();
-    final tasks = service.getAvailableTasks();
+    final tasks = _tasks;
     final applications = service.getFreelancerApplications();
     final works = service.getFreelancerWorks();
     final earnings = service.getEarningTransactions();
@@ -27,9 +66,10 @@ class FreelancerHomeScreen extends StatelessWidget {
         children: [
           DashboardHeroCard(
             greeting: 'Cari Tugas Freelancer',
-            title: 'Temukan tugas yang cocok, kirim penawaran, lalu lanjut ke pekerjaan aktif.',
+            title:
+                'Temukan tugas yang cocok, kirim penawaran, lalu lanjut ke pekerjaan aktif.',
             description:
-                'Beranda freelancer sekarang difokuskan untuk demo UAS: cari tugas, cek status penawaran, pantau pekerjaan, dan lihat progres pendapatan secara ringkas.',
+                'Beranda freelancer difokuskan untuk cari tugas, cek status penawaran, pantau pekerjaan, dan lihat progres pendapatan secara ringkas.',
             primaryActionLabel: 'Cari Tugas',
             primaryActionIcon: Icons.travel_explore_rounded,
             onPrimaryAction: () {
@@ -68,6 +108,22 @@ class FreelancerHomeScreen extends StatelessWidget {
             ],
             trailing: _buildFreelancerHeroBadge(),
           ),
+          if (_isLoading) ...[
+            const SizedBox(height: 18),
+            const _FreelancerHomeStatePanel(
+              message: 'Memuat tugas dari backend Laravel...',
+              showLoader: true,
+            ),
+          ],
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 18),
+            _FreelancerHomeStatePanel(
+              message: _errorMessage!,
+              icon: Icons.error_outline_rounded,
+              actionLabel: 'Coba Lagi',
+              onActionTap: _loadProjects,
+            ),
+          ],
           const SizedBox(height: 24),
           TextField(
             readOnly: true,
@@ -80,7 +136,8 @@ class FreelancerHomeScreen extends StatelessWidget {
               );
             },
             decoration: InputDecoration(
-              hintText: 'Cari tugas berdasarkan kategori, budget, atau deadline...',
+              hintText:
+                  'Cari tugas berdasarkan kategori, budget, atau deadline...',
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: IconButton(
                 onPressed: () {
@@ -107,14 +164,26 @@ class FreelancerHomeScreen extends StatelessWidget {
               ),
               DashboardMetricData(
                 label: 'Penawaran Aktif',
-                value: applications.where((item) => item.status == OfferStatus.pending || item.status == OfferStatus.countered).length.toString().padLeft(2, '0'),
+                value: applications
+                    .where((item) =>
+                        item.status == OfferStatus.pending ||
+                        item.status == OfferStatus.countered)
+                    .length
+                    .toString()
+                    .padLeft(2, '0'),
                 helperText: 'Perlu follow-up',
                 icon: Icons.assignment_turned_in_rounded,
                 color: const Color(0xFFF59E0B),
               ),
               DashboardMetricData(
                 label: 'Pekerjaan Jalan',
-                value: works.where((item) => item.status == WorkStatus.inProgress || item.status == WorkStatus.waitingConfirmation).length.toString().padLeft(2, '0'),
+                value: works
+                    .where((item) =>
+                        item.status == WorkStatus.inProgress ||
+                        item.status == WorkStatus.waitingConfirmation)
+                    .length
+                    .toString()
+                    .padLeft(2, '0'),
                 helperText: 'Jaga deadline',
                 icon: Icons.work_history_rounded,
                 color: const Color(0xFF7C3AED),
@@ -133,14 +202,16 @@ class FreelancerHomeScreen extends StatelessWidget {
           const SizedBox(height: 28),
           const DashboardSectionHeader(
             title: 'Progress Profil',
-            subtitle: 'Semakin lengkap profilmu, semakin tinggi peluang dipilih klien.',
+            subtitle:
+                'Semakin lengkap profilmu, semakin tinggi peluang dipilih klien.',
           ),
           const SizedBox(height: 14),
           const _ProfileStrengthCard(),
           const SizedBox(height: 28),
           DashboardSectionHeader(
             title: 'Tugas Rekomendasi',
-            subtitle: 'Kurasi tugas yang paling relevan dengan skill dan kapasitasmu saat ini.',
+            subtitle:
+                'Kurasi tugas yang paling relevan dengan skill dan kapasitasmu saat ini.',
             actionLabel: 'Cari Semua',
             onActionTap: () {
               Navigator.push(
@@ -152,14 +223,18 @@ class FreelancerHomeScreen extends StatelessWidget {
             },
           ),
           const SizedBox(height: 14),
-          ...tasks.take(3).map((project) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _RecommendedProjectCard(data: project),
-              )),
+          if (tasks.isEmpty)
+            const _FreelancerEmptyMessage(message: 'Belum ada tugas tersedia.')
+          else
+            ...tasks.take(3).map((project) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _RecommendedProjectCard(data: project),
+                )),
           const SizedBox(height: 16),
           DashboardSectionHeader(
             title: 'Status Penawaran',
-            subtitle: 'Supaya kamu tahu penawaran mana yang perlu direspon lebih dulu.',
+            subtitle:
+                'Supaya kamu tahu penawaran mana yang perlu direspon lebih dulu.',
             actionLabel: 'Lihat Semua',
             onActionTap: () {
               Navigator.push(
@@ -215,6 +290,72 @@ class FreelancerHomeScreen extends StatelessWidget {
         Icons.rocket_launch_rounded,
         size: 44,
         color: Colors.white,
+      ),
+    );
+  }
+}
+
+class _FreelancerHomeStatePanel extends StatelessWidget {
+  final String message;
+  final bool showLoader;
+  final IconData icon;
+  final String? actionLabel;
+  final VoidCallback? onActionTap;
+
+  const _FreelancerHomeStatePanel({
+    required this.message,
+    this.showLoader = false,
+    this.icon = Icons.sync_rounded,
+    this.actionLabel,
+    this.onActionTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DashboardPanel(
+      child: Row(
+        children: [
+          if (showLoader)
+            const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2.4),
+            )
+          else
+            Icon(icon, color: AuthFlowPalette.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: AuthFlowPalette.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (actionLabel != null && onActionTap != null)
+            TextButton(
+              onPressed: onActionTap,
+              child: Text(actionLabel!),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FreelancerEmptyMessage extends StatelessWidget {
+  final String message;
+
+  const _FreelancerEmptyMessage({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      message,
+      style: const TextStyle(
+        color: AuthFlowPalette.textSecondary,
+        fontWeight: FontWeight.w600,
       ),
     );
   }
@@ -376,7 +517,8 @@ class _RecommendedProjectCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
@@ -396,9 +538,12 @@ class _RecommendedProjectCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _LiteChip(icon: Icons.flash_on_rounded, label: data.budgetRangeLabel),
-              _LiteChip(icon: Icons.schedule_rounded, label: data.deadlineLabel),
-              _LiteChip(icon: Icons.access_time_rounded, label: data.postedLabel),
+              _LiteChip(
+                  icon: Icons.flash_on_rounded, label: data.budgetRangeLabel),
+              _LiteChip(
+                  icon: Icons.schedule_rounded, label: data.deadlineLabel),
+              _LiteChip(
+                  icon: Icons.access_time_rounded, label: data.postedLabel),
             ],
           ),
           const SizedBox(height: 16),
@@ -460,9 +605,11 @@ class _PipelineTile extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: offerStatusColor(data.status).withValues(alpha: 0.12),
+                      color:
+                          offerStatusColor(data.status).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
@@ -523,10 +670,12 @@ class _AgendaCard extends StatelessWidget {
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: workStatusColor(data.status).withValues(alpha: 0.12),
+                      color:
+                          workStatusColor(data.status).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Icon(Icons.work_outline_rounded, color: workStatusColor(data.status)),
+                    child: Icon(Icons.work_outline_rounded,
+                        color: workStatusColor(data.status)),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -554,7 +703,8 @@ class _AgendaCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Align(
-                alignment: compact ? Alignment.centerLeft : Alignment.centerRight,
+                alignment:
+                    compact ? Alignment.centerLeft : Alignment.centerRight,
                 child: Text(
                   '${data.deadlineLabel} • ${formatRupiah(data.agreedBudget)}',
                   textAlign: compact ? TextAlign.left : TextAlign.right,

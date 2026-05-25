@@ -12,7 +12,8 @@ class FreelancerOfferFormScreen extends StatefulWidget {
   });
 
   @override
-  State<FreelancerOfferFormScreen> createState() => _FreelancerOfferFormScreenState();
+  State<FreelancerOfferFormScreen> createState() =>
+      _FreelancerOfferFormScreenState();
 }
 
 class _FreelancerOfferFormScreenState extends State<FreelancerOfferFormScreen> {
@@ -141,7 +142,8 @@ class _FreelancerOfferFormScreenState extends State<FreelancerOfferFormScreen> {
                     maxLines: 6,
                     decoration: const InputDecoration(
                       labelText: 'Pesan penawaran',
-                      hintText: 'Tulis penjelasan singkat tentang keunggulanmu dan rencana pengerjaan...',
+                      hintText:
+                          'Tulis penjelasan singkat tentang keunggulanmu dan rencana pengerjaan...',
                       alignLabelWithHint: true,
                     ),
                     validator: (value) {
@@ -174,7 +176,8 @@ class _FreelancerOfferFormScreenState extends State<FreelancerOfferFormScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Penawaran berhasil dikirim untuk demo. Status akan muncul di tab Penawaran.'),
+        content: Text(
+            'Penawaran berhasil dikirim. Status akan muncul di tab Penawaran.'),
       ),
     );
     Navigator.pop(context);

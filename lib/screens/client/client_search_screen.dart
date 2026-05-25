@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/task_models.dart';
-import '../../services/mock_task_service.dart';
+import '../../services/category_service.dart';
 import 'client_task_detail_screen.dart';
 
 class ClientSearchScreen extends StatefulWidget {
@@ -18,11 +18,20 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
   final _budgetController = TextEditingController(text: '30000');
   final _locationController = TextEditingController();
   final _attachmentController = TextEditingController();
-  final _taskService = MockTaskService();
+  final _categoryService = CategoryService();
 
   String? _selectedCategory;
   DateTime? _selectedDeadline;
   AssistanceType _assistanceType = AssistanceType.online;
+  bool _isLoadingCategories = true;
+  String? _categoryError;
+  List<HelperCategory> _categories = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
 
   @override
   void dispose() {
@@ -34,9 +43,32 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
     super.dispose();
   }
 
+  Future<void> _loadCategories() async {
+    setState(() {
+      _isLoadingCategories = true;
+      _categoryError = null;
+    });
+
+    try {
+      final categories = await _categoryService.getCategories();
+      if (!mounted) return;
+      setState(() {
+        _categories =
+            categories.map((category) => category.toHelperCategory()).toList();
+        _isLoadingCategories = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _categoryError = 'Kategori belum bisa dimuat dari server.';
+        _isLoadingCategories = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final categories = _taskService.getClientCategories();
+    final categories = _categories;
 
     return Scaffold(
       appBar: AppBar(
@@ -122,14 +154,16 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Kategori skill',
                     ),
-                    items: categories
-                        .map(
-                          (category) => DropdownMenuItem(
-                            value: category.title,
-                            child: Text(category.title),
-                          ),
-                        )
-                        .toList(),
+                    items: _isLoadingCategories
+                        ? const []
+                        : categories
+                            .map(
+                              (category) => DropdownMenuItem(
+                                value: category.title,
+                                child: Text(category.title),
+                              ),
+                            )
+                            .toList(),
                     onChanged: (value) {
                       setState(() {
                         _selectedCategory = value;
@@ -137,11 +171,54 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
                     },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
+                        if (_isLoadingCategories) {
+                          return 'Kategori masih dimuat';
+                        }
+                        if (_categoryError != null) {
+                          return _categoryError;
+                        }
                         return 'Pilih kategori skill';
                       }
                       return null;
                     },
                   ),
+                  if (_isLoadingCategories || _categoryError != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        if (_isLoadingCategories)
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        else
+                          const Icon(
+                            Icons.error_outline_rounded,
+                            color: Color(0xFFDC2626),
+                            size: 16,
+                          ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _isLoadingCategories
+                                ? 'Memuat kategori bantuan...'
+                                : _categoryError!,
+                            style: const TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (_categoryError != null)
+                          TextButton(
+                            onPressed: _loadCategories,
+                            child: const Text('Coba Lagi'),
+                          ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _descriptionController,
@@ -280,7 +357,8 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
       context: context,
       firstDate: DateTime.now(),
       lastDate: DateTime(2027),
-      initialDate: _selectedDeadline ?? DateTime.now().add(const Duration(days: 3)),
+      initialDate:
+          _selectedDeadline ?? DateTime.now().add(const Duration(days: 3)),
     );
 
     if (selected == null) return;
@@ -337,7 +415,7 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Permintaan bantuan berhasil dibuat untuk demo.'),
+        content: Text('Permintaan bantuan berhasil dibuat.'),
       ),
     );
   }

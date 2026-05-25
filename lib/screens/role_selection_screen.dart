@@ -31,7 +31,7 @@ class RoleSelectionScreen extends StatelessWidget {
                 Text(
                   mode == AuthFlowMode.login
                       ? 'Pilih peran untuk masuk ke dashboard yang tepat'
-                      : 'Pilih peran untuk mulai membuat akun demo',
+                      : 'Pilih peran untuk mulai membuat akun',
                   style: const TextStyle(
                     fontSize: 30,
                     fontWeight: FontWeight.w800,
@@ -43,7 +43,7 @@ class RoleSelectionScreen extends StatelessWidget {
                 Text(
                   mode == AuthFlowMode.login
                       ? 'Role dipakai untuk menentukan alur kerja dan navigasi yang akan kamu lihat setelah login.'
-                      : 'Role dipakai untuk menyiapkan form daftar dan dashboard demo yang sesuai kebutuhan client atau freelancer.',
+                      : 'Role dipakai untuk menyiapkan form daftar dan dashboard yang sesuai kebutuhan client atau freelancer.',
                   style: TextStyle(
                     fontSize: 15,
                     height: 1.65,
@@ -53,7 +53,8 @@ class RoleSelectionScreen extends StatelessWidget {
                 SizedBox(height: spacing),
                 _RoleCard(
                   title: 'Saya Client',
-                  subtitle: 'Cari freelancer dengan cepat dan kelola kebutuhan proyek dengan rapi.',
+                  subtitle:
+                      'Cari freelancer dengan cepat dan kelola kebutuhan proyek dengan rapi.',
                   icon: Icons.manage_search_rounded,
                   accentColor: const Color(0xFF93C5FD),
                   points: const [
@@ -65,7 +66,8 @@ class RoleSelectionScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 _RoleCard(
                   title: 'Saya Freelancer',
-                  subtitle: 'Temukan proyek sesuai skill dan bangun profil kerja yang lebih meyakinkan.',
+                  subtitle:
+                      'Temukan proyek sesuai skill dan bangun profil kerja yang lebih meyakinkan.',
                   icon: Icons.work_history_rounded,
                   accentColor: const Color(0xFFBFDBFE),
                   points: const [

@@ -60,21 +60,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      await _authService.register(
-        fullName: _fullNameController.text,
+      final user = await _authService.register(
+        name: _fullNameController.text,
         email: _emailController.text,
-        username: _usernameController.text,
-        phoneNumber: _phoneController.text,
         password: _passwordController.text,
         role: _selectedRole,
-        keepSignedIn: _keepSignedIn,
+        phone: _phoneController.text,
       );
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Akun demo berhasil dibuat. Selamat datang di SkillBantuin!'),
+          content:
+              Text('Akun berhasil dibuat. Selamat datang di SkillBantuin!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -84,14 +83,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (_) => MainNavigationScreen(userRole: _selectedRole),
+          builder: (_) => MainNavigationScreen(userRole: user.role),
         ),
         (route) => false,
       );
     } on AuthException catch (error) {
       _showInfoMessage(error.message);
     } catch (_) {
-      _showInfoMessage('Terjadi kendala saat membuat akun. Coba lagi sebentar.');
+      _showInfoMessage(
+          'Terjadi kendala saat membuat akun. Coba lagi sebentar.');
     } finally {
       if (mounted) {
         setState(() {
@@ -149,7 +149,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 _buildSelectedRoleCard(),
                 const SizedBox(height: 12),
                 AuthGlassCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -161,7 +162,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Pendaftaran ini masih mock untuk demo UAS. Data tersimpan lokal bila opsi tetap masuk aktif.',
+                          'Pendaftaran akan dikirim ke backend Laravel sesuai role yang dipilih.',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.78),
                             height: 1.5,
@@ -201,7 +202,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Lengkapi data sederhana dulu. Struktur ini nanti mudah disambungkan ke API Laravel.',
+                          'Lengkapi data akun untuk dikirim ke backend Laravel.',
                           style: TextStyle(
                             color: AuthFlowPalette.textSecondary,
                             height: 1.5,
@@ -321,7 +322,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               onPressed: () {
                                 setState(() {
-                                  _obscureConfirmPassword = !_obscureConfirmPassword;
+                                  _obscureConfirmPassword =
+                                      !_obscureConfirmPassword;
                                 });
                               },
                             ),
@@ -358,7 +360,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 18),
                         AuthPrimaryButton(
-                          label: _isLoading ? 'Memproses...' : 'Daftar Sekarang',
+                          label:
+                              _isLoading ? 'Memproses...' : 'Daftar Sekarang',
                           onPressed: _isLoading ? null : _handleRegister,
                           trailing: _isLoading
                               ? const SizedBox(
@@ -366,8 +369,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   height: 18,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2.2,
-                                    valueColor:
-                                        AlwaysStoppedAnimation<Color>(Colors.white),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
                                   ),
                                 )
                               : const Icon(

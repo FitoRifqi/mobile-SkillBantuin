@@ -131,9 +131,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           vertical: 12,
                         ),
                         decoration: BoxDecoration(
-                          color: isMine
-                              ? const Color(0xFF2563EB)
-                              : Colors.white,
+                          color:
+                              isMine ? const Color(0xFF2563EB) : Colors.white,
                           borderRadius: BorderRadius.circular(18),
                           boxShadow: [
                             BoxShadow(
@@ -190,7 +189,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Lampiran opsional akan dilanjutkan di tahap berikutnya.'),
+                          content: Text(
+                              'Lampiran opsional akan dilanjutkan di tahap berikutnya.'),
                         ),
                       );
                     },
@@ -244,7 +244,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   void _handleNegotiationAction(String action) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Aksi negosiasi "$action" dipicu untuk demo.'),
+        content: Text('Aksi negosiasi "$action" diproses.'),
       ),
     );
   }

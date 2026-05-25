@@ -172,7 +172,8 @@ class _ActivityTaskCard extends StatelessWidget {
             runSpacing: 8,
             children: [
               _MiniChip(icon: Icons.sell_outlined, label: task.category),
-              _MiniChip(icon: Icons.schedule_rounded, label: task.deadlineLabel),
+              _MiniChip(
+                  icon: Icons.schedule_rounded, label: task.deadlineLabel),
               _MiniChip(
                 icon: Icons.wallet_outlined,
                 label: formatRupiah(task.agreedBudget ?? task.initialBudget),
@@ -215,7 +216,8 @@ class _ActivityTaskCard extends StatelessWidget {
 
   String _primaryActionLabel() {
     if (task.status == TaskStatus.waitingPayment) return 'Bayar';
-    if (task.status == TaskStatus.completed || task.status == TaskStatus.submitted) {
+    if (task.status == TaskStatus.completed ||
+        task.status == TaskStatus.submitted) {
       return 'Review';
     }
     return 'Lanjut';
@@ -233,7 +235,7 @@ class _ActivityTaskCard extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Pembayaran dicatat. Status demo lanjut ke ${taskStatusLabel(result.nextTaskStatus)}.',
+              'Pembayaran dicatat. Status lanjut ke ${taskStatusLabel(result.nextTaskStatus)}.',
             ),
           ),
         );
@@ -241,7 +243,8 @@ class _ActivityTaskCard extends StatelessWidget {
       return;
     }
 
-    if (task.status == TaskStatus.completed || task.status == TaskStatus.submitted) {
+    if (task.status == TaskStatus.completed ||
+        task.status == TaskStatus.submitted) {
       final result = await Navigator.push<ReviewSubmissionResult>(
         context,
         MaterialPageRoute(
@@ -252,7 +255,7 @@ class _ActivityTaskCard extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Review ${result.rating} bintang tersimpan. Task demo menjadi ${taskStatusLabel(result.finalTaskStatus)}.',
+              'Review ${result.rating} bintang tersimpan. Task menjadi ${taskStatusLabel(result.finalTaskStatus)}.',
             ),
           ),
         );

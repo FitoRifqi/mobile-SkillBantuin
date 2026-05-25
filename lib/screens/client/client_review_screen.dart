@@ -87,7 +87,9 @@ class _ClientReviewScreenState extends State<ClientReviewScreen> {
                           });
                         },
                         icon: Icon(
-                          index < _rating ? Icons.star_rounded : Icons.star_outline_rounded,
+                          index < _rating
+                              ? Icons.star_rounded
+                              : Icons.star_outline_rounded,
                           color: const Color(0xFFF59E0B),
                           size: 34,
                         ),
@@ -100,7 +102,8 @@ class _ClientReviewScreenState extends State<ClientReviewScreen> {
                     maxLines: 5,
                     decoration: const InputDecoration(
                       labelText: 'Komentar',
-                      hintText: 'Tulis pengalamanmu bekerja dengan volunteer ini...',
+                      hintText:
+                          'Tulis pengalamanmu bekerja dengan volunteer ini...',
                       alignLabelWithHint: true,
                     ),
                     validator: (value) {
@@ -122,7 +125,7 @@ class _ClientReviewScreenState extends State<ClientReviewScreen> {
                       borderRadius: BorderRadius.circular(18),
                     ),
                     child: const Text(
-                      'Setelah review dikirim, task akan dianggap selesai penuh untuk kebutuhan demo UAS.',
+                      'Setelah review dikirim, task akan dianggap selesai penuh.',
                       style: TextStyle(
                         color: Color(0xFF64748B),
                         height: 1.5,
@@ -180,7 +183,7 @@ class _ClientReviewScreenState extends State<ClientReviewScreen> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Penilaian ${result.rating} bintang tersimpan untuk demo dan task dianggap selesai.',
+                  'Penilaian ${result.rating} bintang tersimpan dan task dianggap selesai.',
                   style: const TextStyle(
                     color: Color(0xFF64748B),
                     height: 1.5,

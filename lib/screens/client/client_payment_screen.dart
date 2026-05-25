@@ -40,7 +40,7 @@ class _ClientPaymentScreenState extends State<ClientPaymentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pembayaran Dummy'),
+        title: const Text('Pembayaran'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -85,12 +85,12 @@ class _ClientPaymentScreenState extends State<ClientPaymentScreen> {
                         child: Text('Transfer Bank'),
                       ),
                       DropdownMenuItem(
-                        value: 'QRIS Dummy',
-                        child: Text('QRIS Dummy'),
+                        value: 'QRIS',
+                        child: Text('QRIS'),
                       ),
                       DropdownMenuItem(
-                        value: 'E-Wallet Dummy',
-                        child: Text('E-Wallet Dummy'),
+                        value: 'E-Wallet',
+                        child: Text('E-Wallet'),
                       ),
                     ],
                     onChanged: (value) {
@@ -115,7 +115,7 @@ class _ClientPaymentScreenState extends State<ClientPaymentScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Bukti pembayaran perlu dipilih untuk demo';
+                        return 'Bukti pembayaran perlu dipilih';
                       }
                       return null;
                     },
@@ -127,7 +127,8 @@ class _ClientPaymentScreenState extends State<ClientPaymentScreen> {
                     maxLines: 4,
                     decoration: const InputDecoration(
                       labelText: 'Catatan pembayaran',
-                      hintText: 'Contoh: Bukti transfer dikirim dari rekening pribadi.',
+                      hintText:
+                          'Contoh: Bukti transfer dikirim dari rekening pribadi.',
                       alignLabelWithHint: true,
                     ),
                   ),
@@ -143,7 +144,7 @@ class _ClientPaymentScreenState extends State<ClientPaymentScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Alur Demo Berikutnya',
+                          'Alur Berikutnya',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             color: Color(0xFF0F172A),
@@ -151,7 +152,7 @@ class _ClientPaymentScreenState extends State<ClientPaymentScreen> {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          'Setelah pembayaran dikonfirmasi, task akan dianggap masuk ke tahap verifikasi/siap dikerjakan oleh freelancer untuk kebutuhan presentasi.',
+                          'Setelah pembayaran dikonfirmasi, task akan masuk ke tahap verifikasi lalu siap dikerjakan oleh freelancer.',
                           style: TextStyle(
                             color: Color(0xFF64748B),
                             height: 1.5,
@@ -207,9 +208,14 @@ class _ClientPaymentScreenState extends State<ClientPaymentScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildSummaryRow('Volunteer', widget.selectedOffer?.freelancerName ?? widget.task.assignedFreelancer ?? '-'),
+          _buildSummaryRow(
+              'Volunteer',
+              widget.selectedOffer?.freelancerName ??
+                  widget.task.assignedFreelancer ??
+                  '-'),
           _buildSummaryRow('Total pembayaran', formatRupiah(_totalPayment)),
-          _buildSummaryRow('Status saat ini', paymentStatusLabel(widget.task.paymentStatus)),
+          _buildSummaryRow(
+              'Status saat ini', paymentStatusLabel(widget.task.paymentStatus)),
         ],
       ),
     );
@@ -247,7 +253,7 @@ class _ClientPaymentScreenState extends State<ClientPaymentScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('File dummy berhasil dipilih untuk kebutuhan demo.'),
+        content: Text('File bukti pembayaran berhasil dipilih.'),
       ),
     );
   }
@@ -263,7 +269,7 @@ class _ClientPaymentScreenState extends State<ClientPaymentScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Konfirmasi Pembayaran'),
         content: Text(
-          'Konfirmasi pembayaran dummy sebesar ${formatRupiah(_totalPayment)} dengan metode $_selectedMethod?',
+          'Konfirmasi pembayaran sebesar ${formatRupiah(_totalPayment)} dengan metode $_selectedMethod?',
         ),
         actions: [
           TextButton(
@@ -309,7 +315,7 @@ class _ClientPaymentScreenState extends State<ClientPaymentScreen> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Bukti pembayaran ${result.proofFileName} sudah disimpan untuk demo. Tahap berikutnya: pembayaran diverifikasi lalu task masuk ke proses pengerjaan.',
+                  'Bukti pembayaran ${result.proofFileName} sudah dicatat. Berikutnya pembayaran diverifikasi lalu task masuk ke proses pengerjaan.',
                   style: const TextStyle(
                     color: Color(0xFF64748B),
                     height: 1.5,
@@ -343,9 +349,9 @@ class _PaymentInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final info = switch (method) {
-      'QRIS Dummy' => ('QRIS-CLIENT-2026', 'Tampilkan kode QR dummy saat presentasi'),
-      'E-Wallet Dummy' => ('0899-777-666', 'A/N SkillBantuin Demo'),
-      _ => ('BCA 1234567890', 'A/N SkillBantuin Demo'),
+      'QRIS' => ('QRIS-CLIENT-2026', 'Gunakan kode pembayaran yang tersedia'),
+      'E-Wallet' => ('0899-777-666', 'A/N SkillBantuin'),
+      _ => ('BCA 1234567890', 'A/N SkillBantuin'),
     };
 
     return Container(

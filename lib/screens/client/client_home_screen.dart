@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../models/freelancer_model.dart';
 import '../../models/task_models.dart';
-import '../../services/mock_task_service.dart';
+import '../../services/category_service.dart';
+import '../../services/freelancer_service.dart';
+import '../../services/project_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/auth_flow_widgets.dart';
 import '../../widgets/dashboard_widgets.dart';
@@ -9,19 +12,74 @@ import '../../widgets/status_badge.dart';
 import 'client_projects_screen.dart';
 import 'client_search_screen.dart';
 import 'client_task_detail_screen.dart';
+import 'helper_detail_screen.dart';
+import 'helper_list_screen.dart';
 
-class ClientHomeScreen extends StatelessWidget {
+class ClientHomeScreen extends StatefulWidget {
   const ClientHomeScreen({super.key});
 
   @override
+  State<ClientHomeScreen> createState() => _ClientHomeScreenState();
+}
+
+class _ClientHomeScreenState extends State<ClientHomeScreen> {
+  final _categoryService = CategoryService();
+  final _projectService = ProjectService();
+  final _freelancerService = FreelancerService();
+
+  bool _isLoading = true;
+  String? _errorMessage;
+  List<HelperCategory> _categories = const [];
+  List<ClientTask> _tasks = const [];
+  List<FreelancerModel> _freelancers = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHomeData();
+  }
+
+  Future<void> _loadHomeData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final categoriesFuture = _categoryService.getCategories();
+      final projectsFuture = _projectService.getProjects();
+      final freelancersFuture = _freelancerService.getFreelancers();
+
+      final categories = await categoriesFuture;
+      final projects = await projectsFuture;
+      final freelancers = await freelancersFuture;
+
+      if (!mounted) return;
+      setState(() {
+        _categories =
+            categories.map((category) => category.toHelperCategory()).toList();
+        _tasks = projects.map((project) => project.toClientTask()).toList();
+        _freelancers = freelancers;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Data dari server belum bisa dimuat.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final taskService = MockTaskService();
-    final tasks = taskService.getClientTasks();
-    final categories = taskService.getClientCategories();
-    final freelancers = taskService.getRecommendedFreelancers();
+    final tasks = _tasks;
+    final categories = _categories;
+    final freelancers = _freelancers;
     final activeTasks = tasks
         .where(
-          (task) => task.status == TaskStatus.negotiation ||
+          (task) =>
+              task.status == TaskStatus.negotiation ||
               task.status == TaskStatus.waitingPayment ||
               task.status == TaskStatus.onProgress ||
               task.status == TaskStatus.submitted,
@@ -34,7 +92,8 @@ class ClientHomeScreen extends StatelessWidget {
         children: [
           DashboardHeroCard(
             greeting: 'Dashboard Client',
-            title: 'Temukan bantuan kecil yang tepat dan pantau progresnya dengan cepat.',
+            title:
+                'Temukan bantuan kecil yang tepat dan pantau progresnya dengan cepat.',
             description:
                 'Beranda client sekarang difokuskan ke kebutuhan utama: cari kategori skill, lihat bantuan aktif, cek deadline terdekat, lalu lanjut ke penawaran atau pembayaran.',
             primaryActionLabel: 'Buat Bantuan',
@@ -65,12 +124,29 @@ class ClientHomeScreen extends StatelessWidget {
                 icon: Icons.chat_bubble_outline_rounded,
                 onTap: () => _showMessage(
                   context,
-                  'Chat room terhubung penuh akan saya lanjutkan di Tahap 5.',
+                  'Buka tab Chat untuk melihat percakapan.',
                 ),
               ),
             ],
             trailing: _buildClientHeroBadge(),
           ),
+          if (_isLoading) ...[
+            const SizedBox(height: 18),
+            const _HomeStatePanel(
+              icon: Icons.sync_rounded,
+              message: 'Memuat data dari backend Laravel...',
+              showLoader: true,
+            ),
+          ],
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 18),
+            _HomeStatePanel(
+              icon: Icons.error_outline_rounded,
+              message: _errorMessage!,
+              actionLabel: 'Coba Lagi',
+              onActionTap: _loadHomeData,
+            ),
+          ],
           const SizedBox(height: 24),
           TextField(
             readOnly: true,
@@ -110,21 +186,35 @@ class ClientHomeScreen extends StatelessWidget {
               ),
               DashboardMetricData(
                 label: 'Menunggu Offer',
-                value: tasks.where((task) => task.status == TaskStatus.waitingOffer).length.toString().padLeft(2, '0'),
+                value: tasks
+                    .where((task) => task.status == TaskStatus.waitingOffer)
+                    .length
+                    .toString()
+                    .padLeft(2, '0'),
                 helperText: 'Perlu exposure',
                 icon: Icons.pending_actions_rounded,
                 color: const Color(0xFF0EA5E9),
               ),
               DashboardMetricData(
                 label: 'Belum Bayar',
-                value: tasks.where((task) => task.paymentStatus == PaymentStatus.unpaid || task.paymentStatus == PaymentStatus.pending).length.toString().padLeft(2, '0'),
+                value: tasks
+                    .where((task) =>
+                        task.paymentStatus == PaymentStatus.unpaid ||
+                        task.paymentStatus == PaymentStatus.pending)
+                    .length
+                    .toString()
+                    .padLeft(2, '0'),
                 helperText: 'Cek pembayaran',
                 icon: Icons.payments_outlined,
                 color: const Color(0xFFF59E0B),
               ),
               DashboardMetricData(
                 label: 'Selesai',
-                value: tasks.where((task) => task.status == TaskStatus.completed).length.toString().padLeft(2, '0'),
+                value: tasks
+                    .where((task) => task.status == TaskStatus.completed)
+                    .length
+                    .toString()
+                    .padLeft(2, '0'),
                 helperText: 'Siap direview',
                 icon: Icons.task_alt_rounded,
                 color: const Color(0xFF10B981),
@@ -134,22 +224,30 @@ class ClientHomeScreen extends StatelessWidget {
           const SizedBox(height: 28),
           const DashboardSectionHeader(
             title: 'Kategori Skill',
-            subtitle: 'Kategori populer yang paling sering dipakai client saat membuat bantuan.',
+            subtitle:
+                'Kategori populer yang paling sering dipakai client saat membuat bantuan.',
           ),
           const SizedBox(height: 14),
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: categories
-                .map(
-                  (category) => _CategoryChip(data: category),
-                )
-                .toList(),
+            children: categories.isEmpty
+                ? const [
+                    _EmptyInlineMessage(
+                      message: 'Kategori bantuan belum tersedia.',
+                    ),
+                  ]
+                : categories
+                    .map(
+                      (category) => _CategoryChip(data: category),
+                    )
+                    .toList(),
           ),
           const SizedBox(height: 28),
           DashboardSectionHeader(
             title: 'Bantuan Aktif',
-            subtitle: 'Tugas yang sedang butuh atensi, penawaran, atau tindak lanjut darimu.',
+            subtitle:
+                'Tugas yang sedang butuh atensi, penawaran, atau tindak lanjut darimu.',
             actionLabel: 'Lihat Aktivitas',
             onActionTap: () {
               Navigator.push(
@@ -161,43 +259,67 @@ class ClientHomeScreen extends StatelessWidget {
             },
           ),
           const SizedBox(height: 14),
-          ...activeTasks.take(3).map(
-            (task) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _ActiveTaskCard(task: task),
-            ),
-          ),
+          if (activeTasks.isEmpty)
+            const _EmptyInlineMessage(message: 'Belum ada bantuan aktif.')
+          else
+            ...activeTasks.take(3).map(
+                  (task) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _ActiveTaskCard(task: task),
+                  ),
+                ),
           const SizedBox(height: 16),
           const DashboardSectionHeader(
             title: 'Deadline Terdekat',
-            subtitle: 'Supaya kamu langsung tahu tugas mana yang perlu diprioritaskan hari ini.',
+            subtitle:
+                'Supaya kamu langsung tahu tugas mana yang perlu diprioritaskan hari ini.',
           ),
           const SizedBox(height: 14),
           DashboardPanel(
             child: Column(
-              children: activeTasks.take(3).map(
-                (task) {
-                  final isLast = task == activeTasks.take(3).last;
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
-                    child: _DeadlineTile(task: task),
-                  );
-                },
-              ).toList(),
+              children: activeTasks.isEmpty
+                  ? const [
+                      _EmptyInlineMessage(
+                        message: 'Belum ada deadline dari backend.',
+                      ),
+                    ]
+                  : activeTasks.take(3).map(
+                      (task) {
+                        final visibleTasks = activeTasks.take(3).toList();
+                        final isLast = task == visibleTasks.last;
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
+                          child: _DeadlineTile(task: task),
+                        );
+                      },
+                    ).toList(),
             ),
           ),
           const SizedBox(height: 16),
-          const DashboardSectionHeader(
+          DashboardSectionHeader(
             title: 'Volunteer Rekomendasi',
-            subtitle: 'Referensi cepat jika kamu ingin mencari bantuan dengan respons yang bagus.',
+            subtitle:
+                'Referensi cepat jika kamu ingin mencari bantuan dengan respons yang bagus.',
+            actionLabel: 'Lihat Semua',
+            onActionTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const HelperListScreen(),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 14),
-          ...freelancers.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _RecommendedFreelancerCard(data: item),
+          if (freelancers.isEmpty)
+            const _EmptyInlineMessage(message: 'Helper belum tersedia.')
+          else
+            ...freelancers.map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _RecommendedFreelancerCard(data: item),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -225,6 +347,72 @@ class ClientHomeScreen extends StatelessWidget {
   static void _showMessage(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
+    );
+  }
+}
+
+class _HomeStatePanel extends StatelessWidget {
+  final IconData icon;
+  final String message;
+  final bool showLoader;
+  final String? actionLabel;
+  final VoidCallback? onActionTap;
+
+  const _HomeStatePanel({
+    required this.icon,
+    required this.message,
+    this.showLoader = false,
+    this.actionLabel,
+    this.onActionTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DashboardPanel(
+      child: Row(
+        children: [
+          if (showLoader)
+            const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2.4),
+            )
+          else
+            Icon(icon, color: AuthFlowPalette.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: AuthFlowPalette.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (actionLabel != null && onActionTap != null)
+            TextButton(
+              onPressed: onActionTap,
+              child: Text(actionLabel!),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyInlineMessage extends StatelessWidget {
+  final String message;
+
+  const _EmptyInlineMessage({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      message,
+      style: const TextStyle(
+        color: AuthFlowPalette.textSecondary,
+        fontWeight: FontWeight.w600,
+      ),
     );
   }
 }
@@ -408,66 +596,77 @@ class _DeadlineTile extends StatelessWidget {
 }
 
 class _RecommendedFreelancerCard extends StatelessWidget {
-  final RecommendedFreelancer data;
+  final FreelancerModel data;
 
   const _RecommendedFreelancerCard({required this.data});
 
   @override
   Widget build(BuildContext context) {
-    return DashboardPanel(
-      child: Row(
-        children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: AuthFlowPalette.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: const Icon(
-              Icons.person_rounded,
-              color: AuthFlowPalette.primary,
-            ),
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => HelperDetailScreen(freelancer: data),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  data.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: AuthFlowPalette.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  data.skill,
-                  style: const TextStyle(
-                    color: AuthFlowPalette.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Rating ${data.rating} • Respon ${data.responseTime}',
-                  style: const TextStyle(
-                    color: AuthFlowPalette.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
+        );
+      },
+      child: DashboardPanel(
+        child: Row(
+          children: [
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: AuthFlowPalette.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Icon(
+                Icons.person_rounded,
+                color: AuthFlowPalette.primary,
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            formatRupiah(data.baseRate),
-            style: const TextStyle(
-              color: AuthFlowPalette.primary,
-              fontWeight: FontWeight.w800,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    data.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: AuthFlowPalette.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    data.skill.isEmpty ? 'Helper SkillBantuin' : data.skill,
+                    style: const TextStyle(
+                      color: AuthFlowPalette.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Rating ${data.rating == 0 ? 4.8 : data.rating} • Respon ${data.responseTime.isEmpty ? '< 1 jam' : data.responseTime}',
+                    style: const TextStyle(
+                      color: AuthFlowPalette.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Text(
+              formatRupiah(data.baseRate),
+              style: const TextStyle(
+                color: AuthFlowPalette.primary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

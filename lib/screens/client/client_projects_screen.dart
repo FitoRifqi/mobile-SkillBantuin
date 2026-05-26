@@ -29,14 +29,32 @@ class _ClientActivityView extends StatefulWidget {
 
 class _ClientActivityViewState extends State<_ClientActivityView> {
   final _taskService = MockTaskService();
+  final _searchController = TextEditingController();
   TaskStatus? _selectedStatus;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final allTasks = _taskService.getClientTasks();
-    final filteredTasks = _selectedStatus == null
-        ? allTasks
-        : allTasks.where((task) => task.status == _selectedStatus).toList();
+    final query = _searchController.text.trim().toLowerCase();
+    final filteredTasks = allTasks.where((task) {
+      final matchesStatus =
+          _selectedStatus == null || task.status == _selectedStatus;
+      final matchesSearch = query.isEmpty ||
+          task.title.toLowerCase().contains(query) ||
+          task.category.toLowerCase().contains(query) ||
+          task.nearestAction.toLowerCase().contains(query) ||
+          task.deadlineLabel.toLowerCase().contains(query) ||
+          (task.assignedFreelancer?.toLowerCase().contains(query) ?? false) ||
+          taskStatusLabel(task.status).toLowerCase().contains(query);
+
+      return matchesStatus && matchesSearch;
+    }).toList();
 
     return Scaffold(
       backgroundColor: AppUi.pageBackground,
@@ -51,6 +69,24 @@ class _ClientActivityViewState extends State<_ClientActivityView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                TextField(
+                  controller: _searchController,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Cari aktivitas, kategori, atau freelancer...',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: query.isEmpty
+                        ? null
+                        : IconButton(
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {});
+                            },
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 18),
                 const Text(
                   'Status Tugas',
                   style: TextStyle(
@@ -93,8 +129,9 @@ class _ClientActivityViewState extends State<_ClientActivityView> {
           if (filteredTasks.isEmpty)
             const AppEmptyState(
               icon: Icons.inbox_outlined,
-              title: 'Belum ada tugas',
-              message: 'Ubah filter status untuk melihat aktivitas lainnya.',
+              title: 'Aktivitas tidak ditemukan',
+              message:
+                  'Ubah kata kunci atau filter status untuk melihat lainnya.',
             )
           else
             ...filteredTasks.map(
@@ -203,7 +240,7 @@ class _ActivityTaskCard extends StatelessWidget {
   }
 
   String _primaryActionLabel() {
-    if (task.status == TaskStatus.waitingPayment) return 'Bayar';
+    if (task.status == TaskStatus.waitingPayment) return 'Bayar Sekarang';
     if (task.status == TaskStatus.completed ||
         task.status == TaskStatus.submitted) {
       return 'Review';
@@ -223,7 +260,7 @@ class _ActivityTaskCard extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Pembayaran dicatat.',
+              'Menunggu pembayaran Midtrans.',
             ),
           ),
         );

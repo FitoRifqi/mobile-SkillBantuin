@@ -4,6 +4,7 @@ import '../../models/task_models.dart';
 import '../../models/workflow_results.dart';
 import '../../services/mock_task_service.dart';
 import '../../utils/task_ui_utils.dart';
+import '../../widgets/app_ui.dart';
 import '../../widgets/status_badge.dart';
 import 'freelancer_upload_result_screen.dart';
 
@@ -16,14 +17,31 @@ class FreelancerWorkScreen extends StatefulWidget {
 
 class _FreelancerWorkScreenState extends State<FreelancerWorkScreen> {
   final _taskService = MockTaskService();
+  final _searchController = TextEditingController();
   WorkStatus? _selectedStatus;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final works = _taskService.getFreelancerWorks();
-    final filtered = _selectedStatus == null
-        ? works
-        : works.where((item) => item.status == _selectedStatus).toList();
+    final query = _searchController.text.trim().toLowerCase();
+    final filtered = works.where((item) {
+      final matchesStatus =
+          _selectedStatus == null || item.status == _selectedStatus;
+      final matchesSearch = query.isEmpty ||
+          item.taskTitle.toLowerCase().contains(query) ||
+          item.clientName.toLowerCase().contains(query) ||
+          item.nextStep.toLowerCase().contains(query) ||
+          item.deadlineLabel.toLowerCase().contains(query) ||
+          workStatusLabel(item.status).toLowerCase().contains(query);
+
+      return matchesStatus && matchesSearch;
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -45,40 +63,70 @@ class _FreelancerWorkScreenState extends State<FreelancerWorkScreen> {
                 ),
               ],
             ),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ChoiceChip(
-                  label: const Text('Semua'),
-                  selected: _selectedStatus == null,
-                  onSelected: (_) {
-                    setState(() {
-                      _selectedStatus = null;
-                    });
-                  },
-                ),
-                ...WorkStatus.values.map(
-                  (status) => ChoiceChip(
-                    label: Text(workStatusLabel(status)),
-                    selected: _selectedStatus == status,
-                    onSelected: (_) {
-                      setState(() {
-                        _selectedStatus = status;
-                      });
-                    },
+                TextField(
+                  controller: _searchController,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Cari pekerjaan, client, atau status...',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: query.isEmpty
+                        ? null
+                        : IconButton(
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {});
+                            },
+                            icon: const Icon(Icons.close_rounded),
+                          ),
                   ),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Semua'),
+                      selected: _selectedStatus == null,
+                      onSelected: (_) {
+                        setState(() {
+                          _selectedStatus = null;
+                        });
+                      },
+                    ),
+                    ...WorkStatus.values.map(
+                      (status) => ChoiceChip(
+                        label: Text(workStatusLabel(status)),
+                        selected: _selectedStatus == status,
+                        onSelected: (_) {
+                          setState(() {
+                            _selectedStatus = status;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          ...filtered.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _WorkCard(item: item),
+          if (filtered.isEmpty)
+            const AppEmptyState(
+              icon: Icons.inbox_outlined,
+              title: 'Pekerjaan tidak ditemukan',
+              message: 'Coba ubah kata kunci atau filter status.',
+            )
+          else
+            ...filtered.map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _WorkCard(item: item),
+              ),
             ),
-          ),
         ],
       ),
     );

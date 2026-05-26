@@ -247,14 +247,14 @@ class _OfferCard extends StatelessWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                'Lanjut ke pembayaran untuk ${offer.freelancerName}.',
+                                'Menunggu pembayaran Midtrans untuk ${offer.freelancerName}.',
                               ),
                             ),
                           );
                         }
                       },
                 icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
-                label: const Text('Terima'),
+                label: const Text('Terima & Bayar'),
               ),
               OutlinedButton(
                 onPressed: () => _showMessage(

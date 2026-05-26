@@ -17,7 +17,6 @@ class FreelancerHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final service = MockTaskService();
     final tasks = service.getAvailableTasks();
-    final applications = service.getFreelancerApplications();
     final works = service.getFreelancerWorks();
     final earnings = service.getEarningTransactions();
 
@@ -68,34 +67,6 @@ class FreelancerHomeScreen extends StatelessWidget {
             trailing: _buildFreelancerHeroBadge(),
           ),
           const SizedBox(height: 24),
-          TextField(
-            readOnly: true,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const FreelancerSearchScreen(),
-                ),
-              );
-            },
-            decoration: InputDecoration(
-              hintText:
-                  'Cari tugas berdasarkan kategori, budget, atau deadline...',
-              prefixIcon: const Icon(Icons.search_rounded),
-              suffixIcon: IconButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const FreelancerSearchScreen(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.tune_rounded),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
           DashboardMetricGrid(
             metrics: [
               DashboardMetricData(
@@ -104,19 +75,6 @@ class FreelancerHomeScreen extends StatelessWidget {
                 helperText: 'Siap dilamar',
                 icon: Icons.travel_explore_rounded,
                 color: AuthFlowPalette.primary,
-              ),
-              DashboardMetricData(
-                label: 'Penawaran',
-                value: applications
-                    .where((item) =>
-                        item.status == OfferStatus.pending ||
-                        item.status == OfferStatus.countered)
-                    .length
-                    .toString()
-                    .padLeft(2, '0'),
-                helperText: 'Follow-up',
-                icon: Icons.assignment_turned_in_rounded,
-                color: const Color(0xFFF59E0B),
               ),
               DashboardMetricData(
                 label: 'Berjalan',
@@ -143,16 +101,9 @@ class FreelancerHomeScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 28),
-          const DashboardSectionHeader(
-            title: 'Progress Profil',
-            subtitle: 'Lengkapi profil agar lebih dipercaya.',
-          ),
-          const SizedBox(height: 14),
-          const _ProfileStrengthCard(),
-          const SizedBox(height: 28),
           DashboardSectionHeader(
-            title: 'Tugas Rekomendasi',
-            subtitle: 'Tugas yang cocok untukmu.',
+            title: 'Aktivitas Tugas',
+            subtitle: 'Tugas paling relevan untuk dilamar.',
             actionLabel: 'Cari Semua',
             onActionTap: () {
               Navigator.push(
@@ -164,49 +115,23 @@ class FreelancerHomeScreen extends StatelessWidget {
             },
           ),
           const SizedBox(height: 14),
-          ...tasks.take(3).map((project) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _RecommendedProjectCard(data: project),
-              )),
-          const SizedBox(height: 16),
-          DashboardSectionHeader(
-            title: 'Status Penawaran',
-            subtitle: 'Lamaran yang perlu dicek.',
-            actionLabel: 'Lihat Semua',
-            onActionTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const FreelancerProjectsScreen(),
+          if (tasks.isEmpty)
+            const DashboardPanel(
+              child: Text(
+                'Belum ada tugas yang tersedia saat ini.',
+                style: TextStyle(
+                  color: AuthFlowPalette.textSecondary,
+                  height: 1.5,
                 ),
-              );
-            },
-          ),
-          const SizedBox(height: 14),
-          DashboardPanel(
-            child: Column(
-              children: applications
-                  .map(
-                    (item) => Padding(
-                      padding: EdgeInsets.only(
-                        bottom: item == applications.last ? 0 : 14,
-                      ),
-                      child: _PipelineTile(data: item),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const DashboardSectionHeader(
-            title: 'Agenda Terdekat',
-            subtitle: 'Deadline hari ini.',
-          ),
-          const SizedBox(height: 14),
-          ...works.take(3).map((agenda) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _AgendaCard(data: agenda),
-              )),
+              ),
+            )
+          else
+            ...tasks.take(3).map(
+                  (project) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _RecommendedProjectCard(data: project),
+                  ),
+                ),
         ],
       ),
     );
@@ -227,123 +152,6 @@ class FreelancerHomeScreen extends StatelessWidget {
         Icons.rocket_launch_rounded,
         size: 44,
         color: Colors.white,
-      ),
-    );
-  }
-}
-
-class _ProfileStrengthCard extends StatelessWidget {
-  const _ProfileStrengthCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return DashboardPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: AuthFlowPalette.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.workspace_premium_rounded,
-                  color: AuthFlowPalette.primary,
-                ),
-              ),
-              const SizedBox(width: 14),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Profile Strength 82%',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: AuthFlowPalette.textPrimary,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Tambah portfolio dan verifikasi identitas.',
-                      style: TextStyle(
-                        color: AuthFlowPalette.textSecondary,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: const LinearProgressIndicator(
-              value: 0.82,
-              minHeight: 10,
-              backgroundColor: Color(0xFFE2E8F0),
-              color: AuthFlowPalette.primary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _ChecklistChip(label: 'Portofolio visual', done: true),
-              _ChecklistChip(label: 'Verifikasi identitas', done: false),
-              _ChecklistChip(label: 'Headline profil', done: true),
-              _ChecklistChip(label: 'Testimoni klien', done: false),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChecklistChip extends StatelessWidget {
-  final String label;
-  final bool done;
-
-  const _ChecklistChip({
-    required this.label,
-    required this.done,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = done ? const Color(0xFF10B981) : const Color(0xFFF59E0B);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            done ? Icons.check_circle_rounded : Icons.error_outline_rounded,
-            size: 16,
-            color: color,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -434,161 +242,6 @@ class _RecommendedProjectCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PipelineTile extends StatelessWidget {
-  final FreelancerApplication data;
-
-  const _PipelineTile({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: offerStatusColor(data.status).withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(Icons.flag_rounded, color: offerStatusColor(data.status)),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text(
-                    data.taskTitle,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AuthFlowPalette.textPrimary,
-                    ),
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color:
-                          offerStatusColor(data.status).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      offerStatusLabel(data.status),
-                      style: TextStyle(
-                        color: offerStatusColor(data.status),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                data.note,
-                style: const TextStyle(
-                  color: AuthFlowPalette.textSecondary,
-                  height: 1.45,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                data.updatedAtLabel,
-                style: TextStyle(
-                  color: offerStatusColor(data.status),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AgendaCard extends StatelessWidget {
-  final FreelancerWorkItem data;
-
-  const _AgendaCard({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return DashboardPanel(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = constraints.maxWidth < 380;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color:
-                          workStatusColor(data.status).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(Icons.work_outline_rounded,
-                        color: workStatusColor(data.status)),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          data.taskTitle,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: AuthFlowPalette.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          data.nextStep,
-                          style: const TextStyle(
-                            color: AuthFlowPalette.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Align(
-                alignment:
-                    compact ? Alignment.centerLeft : Alignment.centerRight,
-                child: Text(
-                  '${data.deadlineLabel} • ${formatRupiah(data.agreedBudget)}',
-                  textAlign: compact ? TextAlign.left : TextAlign.right,
-                  style: TextStyle(
-                    color: workStatusColor(data.status),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
       ),
     );
   }

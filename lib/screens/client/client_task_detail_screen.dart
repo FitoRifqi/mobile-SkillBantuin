@@ -210,7 +210,7 @@ class ClientTaskDetailScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Pembayaran ${result.paymentMethod} dicatat.',
+                            'Menunggu pembayaran ${result.paymentMethod}.',
                           ),
                         ),
                       );
@@ -218,7 +218,7 @@ class ClientTaskDetailScreen extends StatelessWidget {
                   }
                 : null,
             icon: const Icon(Icons.payments_outlined, size: 18),
-            label: const Text('Pembayaran'),
+            label: const Text('Bayar via Midtrans'),
           ),
           OutlinedButton.icon(
             onPressed: task.status == TaskStatus.completed ||

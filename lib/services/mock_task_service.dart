@@ -112,7 +112,7 @@ class MockTaskService {
         status: TaskStatus.waitingPayment,
         paymentStatus: PaymentStatus.pending,
         assistanceType: AssistanceType.online,
-        nearestAction: 'Upload bukti pembayaran untuk memulai pengerjaan',
+        nearestAction: 'Selesaikan pembayaran Midtrans untuk mulai pengerjaan',
         progress: 40,
         assignedFreelancer: 'Budi Santoso',
         attachmentName: 'absensi-raw.xlsx',

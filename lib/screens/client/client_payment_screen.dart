@@ -29,7 +29,7 @@ class ClientPaymentScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppUi.pageBackground,
       appBar: AppBar(
-        title: const Text('Pembayaran'),
+        title: const Text('Pembayaran Midtrans'),
       ),
       body: ListView(
         padding: AppUi.pagePadding,
@@ -40,9 +40,42 @@ class ClientPaymentScreen extends StatelessWidget {
             totalPayment: _totalPayment,
           ),
           const SizedBox(height: 16),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Ringkasan Pembayaran',
+                  style: TextStyle(
+                    color: AuthFlowPalette.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _SummaryRow(label: 'Tugas', value: task.title),
+                _SummaryRow(label: 'Freelancer', value: _freelancerName),
+                const _SummaryRow(
+                  label: 'Metode',
+                  value: 'Midtrans Snap',
+                ),
+                _SummaryRow(
+                  label: 'Status',
+                  value: paymentStatusLabel(task.paymentStatus),
+                ),
+                _SummaryRow(
+                  label: 'Total bayar',
+                  value: formatRupiah(_totalPayment),
+                  isTotal: true,
+                  isLast: true,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
           const AppSectionTitle(
             title: 'Metode Pembayaran',
-            subtitle: 'Nanti terhubung ke Midtrans.',
+            subtitle: 'Pilih metode di halaman aman Midtrans Snap.',
           ),
           const SizedBox(height: 10),
           const AppCard(
@@ -72,13 +105,13 @@ class ClientPaymentScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
-                  Icons.info_outline_rounded,
+                  Icons.verified_user_outlined,
                   color: AuthFlowPalette.primary,
                 ),
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Saat backend siap, tombol bayar akan membuka Midtrans Snap.',
+                    'Status pembayaran akan diperbarui otomatis setelah Midtrans mengirim notifikasi.',
                     style: TextStyle(
                       color: AuthFlowPalette.textSecondary,
                       height: 1.45,
@@ -92,7 +125,7 @@ class ClientPaymentScreen extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: () => _simulateMidtransPayment(context),
             icon: const Icon(Icons.lock_rounded, size: 18),
-            label: const Text('Bayar via Midtrans'),
+            label: const Text('Bayar Sekarang'),
           ),
         ],
       ),
@@ -105,7 +138,7 @@ class ClientPaymentScreen extends StatelessWidget {
       proofFileName: 'midtrans-snap-pending',
       totalAmount: _totalPayment,
       paymentStatus: PaymentStatus.pending,
-      nextTaskStatus: TaskStatus.paymentVerified,
+      nextTaskStatus: TaskStatus.waitingPayment,
     );
 
     showModalBottomSheet<void>(
@@ -120,7 +153,7 @@ class ClientPaymentScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Pembayaran Diproses',
+                  'Menunggu Pembayaran',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -129,7 +162,7 @@ class ClientPaymentScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Status akan diperbarui setelah Midtrans mengirim callback.',
+                  'Selesaikan pembayaran di Midtrans. Setelah berhasil, status tugas akan berubah otomatis.',
                   style: TextStyle(
                     color: AuthFlowPalette.textSecondary,
                     height: 1.45,
@@ -178,6 +211,14 @@ class _PaymentHero extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
+            'Pembayaran aman via Midtrans',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.78),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
             taskTitle,
             style: const TextStyle(
               color: Colors.white,
@@ -223,6 +264,57 @@ class _HeroRow extends StatelessWidget {
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isTotal;
+  final bool isLast;
+
+  const _SummaryRow({
+    required this.label,
+    required this.value,
+    this.isTotal = false,
+    this.isLast = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 104,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AuthFlowPalette.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: isTotal
+                    ? AuthFlowPalette.primary
+                    : AuthFlowPalette.textPrimary,
+                fontSize: isTotal ? 18 : 14,
+                fontWeight: isTotal ? FontWeight.w900 : FontWeight.w800,
+                height: 1.4,
+              ),
             ),
           ),
         ],

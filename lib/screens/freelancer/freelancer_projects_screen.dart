@@ -7,26 +7,76 @@ import '../../widgets/app_ui.dart';
 import '../../widgets/auth_flow_widgets.dart';
 import '../../widgets/status_badge.dart';
 
-class FreelancerProjectsScreen extends StatelessWidget {
+class FreelancerProjectsScreen extends StatefulWidget {
   const FreelancerProjectsScreen({super.key});
+
+  @override
+  State<FreelancerProjectsScreen> createState() =>
+      _FreelancerProjectsScreenState();
+}
+
+class _FreelancerProjectsScreenState extends State<FreelancerProjectsScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final applications = MockTaskService().getFreelancerApplications();
+    final query = _searchController.text.trim().toLowerCase();
+    final filteredApplications = applications.where((item) {
+      if (query.isEmpty) return true;
+
+      return item.taskTitle.toLowerCase().contains(query) ||
+          item.category.toLowerCase().contains(query) ||
+          item.note.toLowerCase().contains(query) ||
+          item.proposedDeadline.toLowerCase().contains(query) ||
+          item.updatedAtLabel.toLowerCase().contains(query) ||
+          offerStatusLabel(item.status).toLowerCase().contains(query);
+    }).toList();
 
     return Scaffold(
       backgroundColor: AppUi.pageBackground,
       appBar: AppBar(title: const Text('Penawaran Saya')),
       body: ListView(
         padding: AppUi.pagePadding,
-        children: applications
-            .map(
+        children: [
+          TextField(
+            controller: _searchController,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              hintText: 'Cari penawaran, kategori, atau status...',
+              prefixIcon: const Icon(Icons.search_rounded),
+              suffixIcon: query.isEmpty
+                  ? null
+                  : IconButton(
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {});
+                      },
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (filteredApplications.isEmpty)
+            const AppEmptyState(
+              icon: Icons.inbox_outlined,
+              title: 'Penawaran tidak ditemukan',
+              message: 'Coba ubah kata kunci pencarian.',
+            )
+          else
+            ...filteredApplications.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _ApplicationCard(item: item),
               ),
-            )
-            .toList(),
+            ),
+        ],
       ),
     );
   }

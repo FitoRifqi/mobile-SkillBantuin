@@ -79,11 +79,11 @@ Color offerStatusColor(OfferStatus status) {
 String paymentStatusLabel(PaymentStatus status) {
   switch (status) {
     case PaymentStatus.unpaid:
-      return 'Belum Bayar';
+      return 'Belum Dibayar';
     case PaymentStatus.pending:
-      return 'Menunggu Verifikasi';
+      return 'Menunggu Pembayaran';
     case PaymentStatus.verified:
-      return 'Terverifikasi';
+      return 'Pembayaran Berhasil';
     case PaymentStatus.failed:
       return 'Gagal';
     case PaymentStatus.refunded:

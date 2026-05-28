@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../models/task_models.dart';
+import '../../models/user_role.dart';
 import '../../models/workflow_results.dart';
 import '../../services/mock_task_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/app_ui.dart';
 import '../../widgets/status_badge.dart';
+import '../shared/notification_screen.dart';
 import 'freelancer_upload_result_screen.dart';
 
 class FreelancerWorkScreen extends StatefulWidget {
@@ -46,6 +48,22 @@ class _FreelancerWorkScreenState extends State<FreelancerWorkScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pekerjaan'),
+        actions: [
+          IconButton(
+            tooltip: 'Notifikasi',
+            icon: const Icon(Icons.notifications_none_rounded),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const NotificationScreen(
+                    userRole: UserRole.freelancer,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

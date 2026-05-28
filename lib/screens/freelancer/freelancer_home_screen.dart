@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../models/task_models.dart';
+import '../../models/user_role.dart';
 import '../../services/mock_task_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/auth_flow_widgets.dart';
 import '../../widgets/dashboard_widgets.dart';
-import 'freelancer_projects_screen.dart';
+import '../shared/notification_screen.dart';
 import 'freelancer_search_screen.dart';
 import 'freelancer_task_detail_screen.dart';
 import 'freelancer_work_screen.dart';
@@ -40,13 +41,15 @@ class FreelancerHomeScreen extends StatelessWidget {
             },
             quickActions: [
               DashboardQuickAction(
-                label: 'Penawaran',
-                icon: Icons.assignment_outlined,
+                label: 'Notifikasi',
+                icon: Icons.notifications_none_rounded,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const FreelancerProjectsScreen(),
+                      builder: (_) => const NotificationScreen(
+                        userRole: UserRole.freelancer,
+                      ),
                     ),
                   );
                 },

@@ -24,6 +24,8 @@ class ClientPaymentScreen extends StatelessWidget {
       task.assignedFreelancer ??
       'Belum dipilih';
 
+  String get _invoiceId => 'SB-${task.id.toUpperCase()}';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,6 +56,7 @@ class ClientPaymentScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 _SummaryRow(label: 'Tugas', value: task.title),
+                _SummaryRow(label: 'Invoice', value: _invoiceId),
                 _SummaryRow(label: 'Freelancer', value: _freelancerName),
                 const _SummaryRow(
                   label: 'Metode',
@@ -67,6 +70,44 @@ class ClientPaymentScreen extends StatelessWidget {
                   label: 'Total bayar',
                   value: formatRupiah(_totalPayment),
                   isTotal: true,
+                  isLast: true,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Riwayat Transaksi',
+                  style: TextStyle(
+                    color: AuthFlowPalette.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _PaymentTimelineTile(
+                  title: 'Invoice dibuat',
+                  subtitle: 'Menunggu client membuka Midtrans Snap',
+                  time: task.createdAtLabel,
+                  done: true,
+                ),
+                _PaymentTimelineTile(
+                  title: 'Menunggu pembayaran',
+                  subtitle: 'Status akan diperbarui dari callback Midtrans',
+                  time: 'Hari ini',
+                  done: task.paymentStatus != PaymentStatus.unpaid,
+                ),
+                _PaymentTimelineTile(
+                  title: 'Pembayaran berhasil',
+                  subtitle: 'Tugas otomatis masuk tahap pengerjaan',
+                  time: task.paymentStatus == PaymentStatus.verified
+                      ? 'Terverifikasi'
+                      : 'Belum tersedia',
+                  done: task.paymentStatus == PaymentStatus.verified,
                   isLast: true,
                 ),
               ],
@@ -319,6 +360,96 @@ class _SummaryRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PaymentTimelineTile extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String time;
+  final bool done;
+  final bool isLast;
+
+  const _PaymentTimelineTile({
+    required this.title,
+    required this.subtitle,
+    required this.time,
+    required this.done,
+    this.isLast = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = done ? AuthFlowPalette.primary : const Color(0xFFCBD5E1);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: done ? 0.12 : 0.32),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                done ? Icons.check_rounded : Icons.schedule_rounded,
+                color: color,
+                size: 19,
+              ),
+            ),
+            if (!isLast)
+              Container(
+                width: 2,
+                height: 26,
+                color: color.withValues(alpha: 0.28),
+              ),
+          ],
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(top: 2, bottom: isLast ? 0 : 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          color: AuthFlowPalette.textPrimary,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      time,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: AuthFlowPalette.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

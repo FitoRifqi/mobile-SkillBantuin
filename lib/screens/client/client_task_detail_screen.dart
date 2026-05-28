@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/task_models.dart';
 import '../../models/workflow_results.dart';
 import '../../utils/task_ui_utils.dart';
+import '../../widgets/auth_flow_widgets.dart';
 import '../../widgets/status_badge.dart';
 import 'client_offers_screen.dart';
 import 'client_payment_screen.dart';
@@ -27,6 +28,8 @@ class ClientTaskDetailScreen extends StatelessWidget {
         children: [
           _buildHeaderCard(),
           const SizedBox(height: 16),
+          _buildStepTracker(),
+          const SizedBox(height: 16),
           _buildDetailCard(),
           const SizedBox(height: 16),
           _buildOfferPreview(context),
@@ -35,6 +38,75 @@ class ClientTaskDetailScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildStepTracker() {
+    final steps = [
+      _TaskStepData(
+        label: 'Penawaran',
+        icon: Icons.local_offer_outlined,
+        done: _stepIndex >= 0,
+        active: _stepIndex == 0,
+      ),
+      _TaskStepData(
+        label: 'Pembayaran',
+        icon: Icons.payments_outlined,
+        done: _stepIndex >= 1,
+        active: _stepIndex == 1,
+      ),
+      _TaskStepData(
+        label: 'Dikerjakan',
+        icon: Icons.work_outline_rounded,
+        done: _stepIndex >= 2,
+        active: _stepIndex == 2,
+      ),
+      _TaskStepData(
+        label: 'Hasil',
+        icon: Icons.upload_file_outlined,
+        done: _stepIndex >= 3,
+        active: _stepIndex == 3,
+      ),
+      _TaskStepData(
+        label: 'Review',
+        icon: Icons.star_outline_rounded,
+        done: _stepIndex >= 4,
+        active: _stepIndex == 4,
+      ),
+    ];
+
+    return _SectionCard(
+      title: 'Progress Tugas',
+      child: Column(
+        children: [
+          for (var i = 0; i < steps.length; i++)
+            _TaskStepTile(
+              data: steps[i],
+              isLast: i == steps.length - 1,
+            ),
+        ],
+      ),
+    );
+  }
+
+  int get _stepIndex {
+    switch (task.status) {
+      case TaskStatus.open:
+      case TaskStatus.waitingOffer:
+      case TaskStatus.negotiation:
+        return 0;
+      case TaskStatus.waitingPayment:
+      case TaskStatus.paymentVerified:
+        return 1;
+      case TaskStatus.onProgress:
+        return 2;
+      case TaskStatus.submitted:
+        return 3;
+      case TaskStatus.completed:
+        return 4;
+      case TaskStatus.cancelled:
+      case TaskStatus.overdue:
+        return 0;
+    }
   }
 
   Widget _buildHeaderCard() {
@@ -334,6 +406,102 @@ class _SectionCard extends StatelessWidget {
           child,
         ],
       ),
+    );
+  }
+}
+
+class _TaskStepData {
+  final String label;
+  final IconData icon;
+  final bool done;
+  final bool active;
+
+  const _TaskStepData({
+    required this.label,
+    required this.icon,
+    required this.done,
+    required this.active,
+  });
+}
+
+class _TaskStepTile extends StatelessWidget {
+  final _TaskStepData data;
+  final bool isLast;
+
+  const _TaskStepTile({
+    required this.data,
+    required this.isLast,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = data.done ? const Color(0xFF059669) : const Color(0xFFCBD5E1);
+    final textColor =
+        data.done ? AuthFlowPalette.textPrimary : AuthFlowPalette.textSecondary;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: data.done ? 0.14 : 0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                data.done ? Icons.check_rounded : data.icon,
+                color: color,
+                size: 20,
+              ),
+            ),
+            if (!isLast)
+              Container(
+                width: 2,
+                height: 22,
+                color: color.withValues(alpha: data.done ? 0.45 : 0.24),
+              ),
+          ],
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(top: 7, bottom: isLast ? 0 : 18),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    data.label,
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                if (data.active)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF059669).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Text(
+                      'Aktif',
+                      style: TextStyle(
+                        color: Color(0xFF059669),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../models/user_role.dart';
 import '../../models/task_models.dart';
 import '../../services/mock_task_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/auth_flow_widgets.dart';
 import '../../widgets/dashboard_widgets.dart';
 import '../../widgets/status_badge.dart';
+import '../shared/notification_screen.dart';
 import 'client_projects_screen.dart';
 import 'client_search_screen.dart';
 import 'client_task_detail_screen.dart';
@@ -46,6 +48,19 @@ class ClientHomeScreen extends StatelessWidget {
               );
             },
             quickActions: [
+              DashboardQuickAction(
+                label: 'Notifikasi',
+                icon: Icons.notifications_none_rounded,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const NotificationScreen(userRole: UserRole.client),
+                    ),
+                  );
+                },
+              ),
               DashboardQuickAction(
                 label: 'Cek Chat',
                 icon: Icons.chat_bubble_outline_rounded,

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../models/task_models.dart';
+import '../../models/user_role.dart';
 import '../../models/workflow_results.dart';
 import '../../services/mock_task_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/app_ui.dart';
 import '../../widgets/auth_flow_widgets.dart';
 import '../../widgets/status_badge.dart';
+import '../shared/notification_screen.dart';
 import 'client_payment_screen.dart';
 import 'client_review_screen.dart';
 import 'client_task_detail_screen.dart';
@@ -60,6 +62,21 @@ class _ClientActivityViewState extends State<_ClientActivityView> {
       backgroundColor: AppUi.pageBackground,
       appBar: AppBar(
         title: const Text('Aktivitas Client'),
+        actions: [
+          IconButton(
+            tooltip: 'Notifikasi',
+            icon: const Icon(Icons.notifications_none_rounded),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const NotificationScreen(userRole: UserRole.client),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: ListView(
         padding: AppUi.pagePadding,

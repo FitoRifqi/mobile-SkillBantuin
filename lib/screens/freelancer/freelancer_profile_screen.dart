@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../models/user_role.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/auth_flow_widgets.dart';
 import '../role_selection_screen.dart';
+import '../shared/edit_profile_screen.dart';
+import '../shared/notification_screen.dart';
 import 'freelancer_earnings_screen.dart';
 
 class FreelancerProfileScreen extends StatelessWidget {
@@ -18,9 +21,32 @@ class FreelancerProfileScreen extends StatelessWidget {
         title: const Text('Profil Freelancer'),
         actions: [
           IconButton(
+            tooltip: 'Notifikasi',
+            icon: const Icon(Icons.notifications_none_rounded),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const NotificationScreen(
+                    userRole: UserRole.freelancer,
+                  ),
+                ),
+              );
+            },
+          ),
+          IconButton(
             tooltip: 'Edit profil',
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const EditProfileScreen(
+                    userRole: UserRole.freelancer,
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),

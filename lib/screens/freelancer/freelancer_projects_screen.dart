@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../models/task_models.dart';
+import '../../models/user_role.dart';
 import '../../services/mock_task_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/app_ui.dart';
 import '../../widgets/auth_flow_widgets.dart';
 import '../../widgets/status_badge.dart';
+import '../shared/notification_screen.dart';
 
 class FreelancerProjectsScreen extends StatefulWidget {
   const FreelancerProjectsScreen({super.key});
@@ -41,7 +43,25 @@ class _FreelancerProjectsScreenState extends State<FreelancerProjectsScreen> {
 
     return Scaffold(
       backgroundColor: AppUi.pageBackground,
-      appBar: AppBar(title: const Text('Penawaran Saya')),
+      appBar: AppBar(
+        title: const Text('Penawaran Saya'),
+        actions: [
+          IconButton(
+            tooltip: 'Notifikasi',
+            icon: const Icon(Icons.notifications_none_rounded),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const NotificationScreen(
+                    userRole: UserRole.freelancer,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: ListView(
         padding: AppUi.pagePadding,
         children: [

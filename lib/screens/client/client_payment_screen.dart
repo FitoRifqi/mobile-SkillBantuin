@@ -16,8 +16,10 @@ class ClientPaymentScreen extends StatelessWidget {
     this.selectedOffer,
   });
 
-  int get _totalPayment =>
+  int get _serviceAmount =>
       selectedOffer?.offeredBudget ?? task.agreedBudget ?? task.initialBudget;
+  int get _platformFee => (_serviceAmount * 0.05).ceil();
+  int get _totalPayment => _serviceAmount + _platformFee;
 
   String get _freelancerName =>
       selectedOffer?.freelancerName ??
@@ -58,6 +60,14 @@ class ClientPaymentScreen extends StatelessWidget {
                 _SummaryRow(label: 'Tugas', value: task.title),
                 _SummaryRow(label: 'Invoice', value: _invoiceId),
                 _SummaryRow(label: 'Freelancer', value: _freelancerName),
+                _SummaryRow(
+                  label: 'Biaya jasa',
+                  value: formatRupiah(_serviceAmount),
+                ),
+                _SummaryRow(
+                  label: 'Platform fee',
+                  value: '${formatRupiah(_platformFee)} (5%)',
+                ),
                 const _SummaryRow(
                   label: 'Metode',
                   value: 'Midtrans Snap',
@@ -152,7 +162,7 @@ class ClientPaymentScreen extends StatelessWidget {
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Status pembayaran akan diperbarui otomatis setelah Midtrans mengirim notifikasi.',
+                    'Semua pembayaran wajib lewat SkillBantuin. Status akan diperbarui otomatis setelah Midtrans mengirim notifikasi.',
                     style: TextStyle(
                       color: AuthFlowPalette.textSecondary,
                       height: 1.45,
@@ -270,6 +280,7 @@ class _PaymentHero extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           _HeroRow(label: 'Freelancer', value: freelancerName),
+          const _HeroRow(label: 'Biaya platform', value: '5%'),
           _HeroRow(label: 'Total', value: formatRupiah(totalPayment)),
         ],
       ),

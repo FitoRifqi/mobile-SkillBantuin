@@ -46,8 +46,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _headlineController.text = 'Teknologi Informasi';
       _bioController.text =
           'Membutuhkan bantuan cepat untuk kebutuhan desain, data, dan pengembangan aplikasi.';
-      _bankController.text = 'Bank BCA';
-      _accountController.text = '1234567890';
     } else {
       _nameController.text = 'Ahmad Rizki';
       _emailController.text = 'ahmad.rizki@email.com';
@@ -224,40 +222,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
             ],
             const SizedBox(height: 16),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _SectionLabel(
-                    title: _isClient ? 'Pembayaran' : 'Pencairan Dana',
-                    subtitle: _isClient
-                        ? 'Metode pembayaran default untuk Midtrans.'
-                        : 'Rekening tujuan pencairan saldo freelancer.',
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _bankController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama bank',
-                      prefixIcon: Icon(Icons.account_balance_outlined),
+            if (_isClient)
+              const AppCard(
+                child: _SectionLabel(
+                  title: 'Pembayaran',
+                  subtitle:
+                      'Client tidak perlu menyimpan rekening. Semua pembayaran dilakukan lewat Midtrans Snap dengan platform fee 5%.',
+                ),
+              )
+            else
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _SectionLabel(
+                      title: 'Pencairan Dana',
+                      subtitle: 'Rekening tujuan pencairan saldo freelancer.',
                     ),
-                    validator: _requiredValidator,
-                  ),
-                  const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _accountController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: _isClient
-                          ? 'Nomor akun pembayaran'
-                          : 'Nomor rekening',
-                      prefixIcon: const Icon(Icons.credit_card_rounded),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _bankController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama bank',
+                        prefixIcon: Icon(Icons.account_balance_outlined),
+                      ),
+                      validator: _requiredValidator,
                     ),
-                    validator: _requiredValidator,
-                  ),
-                ],
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _accountController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Nomor rekening',
+                        prefixIcon: Icon(Icons.credit_card_rounded),
+                      ),
+                      validator: _requiredValidator,
+                    ),
+                  ],
+                ),
               ),
-            ),
             const SizedBox(height: 16),
             AppCard(
               child: Column(

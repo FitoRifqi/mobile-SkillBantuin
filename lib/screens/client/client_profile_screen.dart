@@ -83,21 +83,21 @@ class ClientProfileScreen extends StatelessWidget {
           const SizedBox(height: 18),
           const _SectionTitle(
             title: 'Pembayaran',
-            subtitle: 'Metode pembayaran aktif.',
+            subtitle: 'Transaksi client diproses aman lewat Midtrans.',
           ),
           const SizedBox(height: 10),
           const _InfoPanel(
             children: [
               _InfoTile(
-                icon: Icons.credit_card_rounded,
-                title: 'Visa',
-                subtitle: '•••• 4242',
-                trailing: _StatusPill(label: 'Utama'),
+                icon: Icons.account_balance_wallet_outlined,
+                title: 'Midtrans Snap',
+                subtitle: 'QRIS, e-wallet, virtual account, dan m-banking',
+                trailing: _StatusPill(label: 'Aktif'),
               ),
               _InfoTile(
-                icon: Icons.account_balance_outlined,
-                title: 'Bank BCA',
-                subtitle: '1234567890',
+                icon: Icons.percent_rounded,
+                title: 'Platform fee',
+                subtitle: '5% dari nilai jasa setiap transaksi',
               ),
             ],
           ),

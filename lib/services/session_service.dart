@@ -27,6 +27,11 @@ class SessionService {
     }
   }
 
+  Future<String?> getSessionToken() async {
+    final user = await getSession();
+    return user?.token;
+  }
+
   Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_sessionKey);

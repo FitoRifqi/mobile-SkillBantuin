@@ -1,13 +1,19 @@
+import '../config/api_config.dart';
 import '../models/app_user.dart';
 import '../models/user_role.dart';
+import 'api_exception.dart';
+import 'laravel_auth_service.dart';
 import 'session_service.dart';
 
 class AuthService {
   AuthService({
     SessionService? sessionService,
-  }) : _sessionService = sessionService ?? SessionService();
+    LaravelAuthService? laravelAuthService,
+  })  : _sessionService = sessionService ?? SessionService(),
+        _laravelAuthService = laravelAuthService;
 
   final SessionService _sessionService;
+  final LaravelAuthService? _laravelAuthService;
 
   static final List<_MockAccount> _accounts = [
     const _MockAccount(
@@ -36,6 +42,17 @@ class AuthService {
     required UserRole role,
     required bool rememberMe,
   }) async {
+    if (ApiConfig.useLaravelApi) {
+      return _runLaravelAuth(
+        () => _laravel.login(
+          identity: identity,
+          password: password,
+          role: role,
+          rememberMe: rememberMe,
+        ),
+      );
+    }
+
     await Future<void>.delayed(const Duration(milliseconds: 900));
 
     final normalizedIdentity = identity.trim().toLowerCase();
@@ -75,6 +92,20 @@ class AuthService {
     required UserRole role,
     required bool keepSignedIn,
   }) async {
+    if (ApiConfig.useLaravelApi) {
+      return _runLaravelAuth(
+        () => _laravel.register(
+          fullName: fullName,
+          email: email,
+          username: username,
+          phoneNumber: phoneNumber,
+          password: password,
+          role: role,
+          keepSignedIn: keepSignedIn,
+        ),
+      );
+    }
+
     await Future<void>.delayed(const Duration(milliseconds: 900));
 
     final normalizedEmail = email.trim().toLowerCase();
@@ -119,7 +150,21 @@ class AuthService {
   }
 
   Future<void> logout() {
+    if (ApiConfig.useLaravelApi) return _laravel.logout();
     return _sessionService.clearSession();
+  }
+
+  LaravelAuthService get _laravel {
+    return _laravelAuthService ??
+        LaravelAuthService(sessionService: _sessionService);
+  }
+
+  Future<AppUser> _runLaravelAuth(Future<AppUser> Function() request) async {
+    try {
+      return await request();
+    } on ApiException catch (error) {
+      throw AuthException(error.message);
+    }
   }
 }
 

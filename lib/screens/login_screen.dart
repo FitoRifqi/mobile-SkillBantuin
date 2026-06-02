@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/auth_flow_mode.dart';
 import '../models/user_role.dart';
-import '../services/auth_service.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/auth_flow_widgets.dart';
 import 'main_navigation_screen.dart';
 import 'role_selection_screen.dart';
@@ -23,11 +24,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authService = AuthService();
   late final UserRole _selectedRole;
   bool _rememberMe = false;
   bool _obscurePassword = true;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -42,23 +41,21 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() async {
+  Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    final authProvider = context.read<AuthProvider>();
 
-    try {
-      await _authService.login(
-        identity: _emailController.text,
-        password: _passwordController.text,
-        role: _selectedRole,
-        rememberMe: _rememberMe,
-      );
+    await authProvider.login(
+      identity: _emailController.text,
+      password: _passwordController.text,
+      role: _selectedRole,
+      rememberMe: _rememberMe,
+    );
 
-      if (!mounted) return;
+    if (!mounted) return;
 
+    if (authProvider.isAuthenticated) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Login berhasil. Selamat datang kembali!'),
@@ -75,22 +72,18 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         (route) => false,
       );
-    } on AuthException catch (error) {
-      _showInfoMessage(error.message);
-    } catch (_) {
-      _showInfoMessage('Terjadi kendala saat login. Coba lagi sebentar.');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      return;
     }
+
+    _showInfoMessage(
+      authProvider.error ?? 'Terjadi kendala saat login. Coba lagi sebentar.',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final spacing = authVerticalSpacing(context);
+    final authProvider = context.watch<AuthProvider>();
     final isClient = _selectedRole == UserRole.client;
 
     return Scaffold(
@@ -282,9 +275,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 16),
                         AuthPrimaryButton(
-                          label: _isLoading ? 'Memproses...' : 'Masuk',
-                          onPressed: _isLoading ? null : _handleLogin,
-                          trailing: _isLoading
+                          label: authProvider.isLoading ? 'Memproses...' : 'Masuk',
+                          onPressed: authProvider.isLoading ? null : _handleLogin,
+                          trailing: authProvider.isLoading
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,

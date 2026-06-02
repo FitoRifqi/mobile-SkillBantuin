@@ -33,16 +33,16 @@ class AppUser {
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
     return AppUser(
-      id: json['id'] as String,
-      fullName: json['fullName'] as String,
+      id: json['id'].toString(),
+      fullName: json['fullName'] as String? ?? json['name'] as String? ?? '',
       email: json['email'] as String,
-      username: json['username'] as String,
-      phoneNumber: json['phoneNumber'] as String? ?? '',
+      username: json['username'] as String? ?? '',
+      phoneNumber: json['phoneNumber'] as String? ?? json['phone'] as String? ?? '',
       role: UserRole.values.firstWhere(
         (role) => role.name == json['role'],
         orElse: () => UserRole.client,
       ),
-      token: json['token'] as String,
+      token: json['token'] as String? ?? '',
     );
   }
 }

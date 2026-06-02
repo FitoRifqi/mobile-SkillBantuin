@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../models/app_user.dart';
 import '../../models/user_role.dart';
 import '../../services/auth_service.dart';
+import '../../services/session_service.dart';
 import '../../widgets/auth_flow_widgets.dart';
 import '../role_selection_screen.dart';
 import '../shared/edit_profile_screen.dart';
@@ -53,7 +55,7 @@ class FreelancerProfileScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
         children: [
-          const _FreelancerHero(),
+          _FreelancerHero(),
           const SizedBox(height: 16),
           const _ReadinessCard(),
           const SizedBox(height: 16),
@@ -177,11 +179,25 @@ class FreelancerProfileScreen extends StatelessWidget {
 }
 
 class _FreelancerHero extends StatelessWidget {
-  const _FreelancerHero();
+  _FreelancerHero({super.key});
+
+  final SessionService _sessionService = SessionService();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return FutureBuilder<AppUser?>(
+      future: _sessionService.getSession(),
+      builder: (context, snapshot) {
+        final user = snapshot.data;
+        final displayName = user?.fullName.isNotEmpty == true
+            ? user!.fullName
+            : 'Freelancer'
+                .toUpperCase();
+        final subtitle = user?.username.isNotEmpty == true
+            ? '@${user!.username}'
+            : 'Full Stack Developer';
+
+        return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: AuthFlowPalette.backgroundGradient,
@@ -237,9 +253,9 @@ class _FreelancerHero extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Ahmad Rizki',
-                      style: TextStyle(
+                    Text(
+                      displayName,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 23,
                         fontWeight: FontWeight.w800,
@@ -248,7 +264,7 @@ class _FreelancerHero extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Full Stack Developer',
+                      subtitle,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.82),
                         height: 1.4,
@@ -273,6 +289,8 @@ class _FreelancerHero extends StatelessWidget {
           ),
         ],
       ),
+    );
+      },
     );
   }
 }

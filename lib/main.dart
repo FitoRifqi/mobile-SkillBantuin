@@ -1,11 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:skillbantuin/providers/auth_provider.dart';
 import 'package:skillbantuin/screens/splash_screen.dart';
+import 'package:skillbantuin/services/api_service.dart';
+import 'package:skillbantuin/services/auth_service.dart';
+import 'package:skillbantuin/services/session_service.dart';
 import 'package:skillbantuin/widgets/app_ui.dart';
 import 'package:skillbantuin/widgets/auth_flow_widgets.dart';
+import 'package:skillbantuin/providers/project_provider.dart';
+import 'package:skillbantuin/providers/freelancer_provider.dart';
 
-void main() {
-  runApp(const SkillBantuinApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final preferences = await SharedPreferences.getInstance();
+  final sessionService = SessionService(sharedPreferences: preferences);
+  final apiService = ApiService();
+  final authService = AuthService(
+    apiService: apiService,
+    sessionService: sessionService,
+  );
+
+  runApp(
+    MultiProvider(
+      providers: [
+        Provider<SharedPreferences>.value(value: preferences),
+        Provider<SessionService>.value(value: sessionService),
+        Provider<ApiService>.value(value: apiService),
+        Provider<AuthService>.value(value: authService),
+        ChangeNotifierProvider<AuthProvider>(
+          create: (_) => AuthProvider(authService)..initialize(),
+        ),
+        ChangeNotifierProvider<ProjectProvider>(
+          create: (ctx) => ProjectProvider(
+            ctx.read<ApiService>(),
+            ctx.read<SessionService>(),
+          ),
+        ),
+        ChangeNotifierProvider<FreelancerProvider>(
+          create: (ctx) => FreelancerProvider(ctx.read<ApiService>()),
+        ),
+      ],
+      child: const SkillBantuinApp(),
+    ),
+  );
 }
 
 class SkillBantuinApp extends StatelessWidget {

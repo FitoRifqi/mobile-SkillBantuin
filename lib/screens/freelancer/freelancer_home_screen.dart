@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../models/task_models.dart';
 import '../../models/user_role.dart';
-import '../../services/mock_task_service.dart';
+import '../../providers/project_provider.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/auth_flow_widgets.dart';
 import '../../widgets/dashboard_widgets.dart';
@@ -10,17 +10,24 @@ import '../shared/notification_screen.dart';
 import 'freelancer_search_screen.dart';
 import 'freelancer_task_detail_screen.dart';
 import 'freelancer_work_screen.dart';
-
-class FreelancerHomeScreen extends StatelessWidget {
+class FreelancerHomeScreen extends StatefulWidget {
   const FreelancerHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final service = MockTaskService();
-    final tasks = service.getAvailableTasks();
-    final works = service.getFreelancerWorks();
-    final earnings = service.getEarningTransactions();
+  State<FreelancerHomeScreen> createState() => _FreelancerHomeScreenState();
+}
 
+class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProjectProvider>().fetchProjects();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return DashboardScaffold(
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,38 +77,24 @@ class FreelancerHomeScreen extends StatelessWidget {
             trailing: _buildFreelancerHeroBadge(),
           ),
           const SizedBox(height: 24),
-          DashboardMetricGrid(
-            metrics: [
-              DashboardMetricData(
-                label: 'Tersedia',
-                value: tasks.length.toString().padLeft(2, '0'),
-                helperText: 'Siap dilamar',
-                icon: Icons.travel_explore_rounded,
-                color: AuthFlowPalette.primary,
-              ),
-              DashboardMetricData(
-                label: 'Berjalan',
-                value: works
-                    .where((item) =>
-                        item.status == WorkStatus.inProgress ||
-                        item.status == WorkStatus.waitingConfirmation)
-                    .length
-                    .toString()
-                    .padLeft(2, '0'),
-                helperText: 'Jaga deadline',
-                icon: Icons.work_history_rounded,
-                color: const Color(0xFF16A34A),
-              ),
-              DashboardMetricData(
-                label: 'Pendapatan',
-                value: formatRupiah(
-                  earnings.fold<int>(0, (sum, item) => sum + item.amount),
-                ),
-                helperText: 'Total transaksi',
-                icon: Icons.savings_rounded,
-                color: const Color(0xFF10B981),
-              ),
-            ],
+          Consumer<ProjectProvider>(
+            builder: (context, projectProvider, _) {
+              return DashboardMetricGrid(
+                metrics: [
+                  DashboardMetricData(
+                    label: 'Tersedia',
+                    value: projectProvider.projects.length
+                        .toString()
+                        .padLeft(2, '0'),
+                    helperText: 'Siap dilamar',
+                    icon: Icons.travel_explore_rounded,
+                    color: AuthFlowPalette.primary,
+                  ),
+                  // TODO: Add freelancer-specific work and earnings metrics once
+                  // protected endpoints are implemented in the backend.
+                ],
+              );
+            },
           ),
           const SizedBox(height: 28),
           DashboardSectionHeader(
@@ -118,23 +111,49 @@ class FreelancerHomeScreen extends StatelessWidget {
             },
           ),
           const SizedBox(height: 14),
-          if (tasks.isEmpty)
-            const DashboardPanel(
-              child: Text(
-                'Belum ada tugas yang tersedia saat ini.',
-                style: TextStyle(
-                  color: AuthFlowPalette.textSecondary,
-                  height: 1.5,
-                ),
-              ),
-            )
-          else
-            ...tasks.take(3).map(
-                  (project) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _RecommendedProjectCard(data: project),
+          Consumer<ProjectProvider>(
+            builder: (context, projectProvider, _) {
+              if (projectProvider.isLoading) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              if (projectProvider.errorMessage != null) {
+                return DashboardPanel(
+                  child: Text(
+                    'Gagal memuat tugas: ${projectProvider.errorMessage}',
+                    style: const TextStyle(
+                      color: AuthFlowPalette.textSecondary,
+                      height: 1.5,
+                    ),
                   ),
-                ),
+                );
+              }
+
+              if (projectProvider.projects.isEmpty) {
+                return const DashboardPanel(
+                  child: Text(
+                    'Belum ada tugas yang tersedia saat ini.',
+                    style: TextStyle(
+                      color: AuthFlowPalette.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                );
+              }
+
+              return Column(
+                children: projectProvider.projects.take(3).map(
+                      (project) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _RecommendedProjectCard(data: project),
+                      ),
+                    ).toList(),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -145,10 +164,10 @@ class FreelancerHomeScreen extends StatelessWidget {
       width: 88,
       height: 88,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
+        color: Colors.white.withOpacity(0.12),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.18),
+          color: Colors.white.withOpacity(0.18),
         ),
       ),
       child: const Icon(
@@ -161,12 +180,27 @@ class FreelancerHomeScreen extends StatelessWidget {
 }
 
 class _RecommendedProjectCard extends StatelessWidget {
-  final AvailableTask data;
+  final dynamic data;
 
   const _RecommendedProjectCard({required this.data});
 
   @override
   Widget build(BuildContext context) {
+    final judul = data.judul ?? 'Untitled';
+    final kategoriNama = data.kategori?.namaKategori ?? 'Umum';
+    final clientNama = data.client?.namaKontak ?? 'Client';
+    final anggaran = data.anggaranMin ?? 0;
+    final deadline = data.deadline;
+    final deskripsi = data.deskripsi ?? '';
+
+    final budgetLabel = (data.anggaranMax != null)
+        ? '${formatRupiah(anggaran)} - ${formatRupiah(data.anggaranMax)}'
+        : formatRupiah(anggaran);
+
+    final deadlineLabel = deadline != null
+        ? 'dalam ${deadline.difference(DateTime.now()).inDays} hari'
+        : 'TBD';
+
     return DashboardPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,7 +213,7 @@ class _RecommendedProjectCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      data.title,
+                      judul,
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
@@ -188,7 +222,7 @@ class _RecommendedProjectCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '${data.category} • ${data.clientName}',
+                      '$kategoriNama • $clientNama',
                       style: const TextStyle(
                         color: AuthFlowPalette.textSecondary,
                         fontWeight: FontWeight.w600,
@@ -199,14 +233,13 @@ class _RecommendedProjectCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                  color: const Color(0xFFF59E0B).withOpacity(0.12),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  formatRupiah(data.initialBudget),
+                  formatRupiah(anggaran),
                   style: const TextStyle(
                     color: Color(0xFFF59E0B),
                     fontWeight: FontWeight.w800,
@@ -220,12 +253,10 @@ class _RecommendedProjectCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
+              _LiteChip(icon: Icons.flash_on_rounded, label: budgetLabel),
+              _LiteChip(icon: Icons.schedule_rounded, label: deadlineLabel),
               _LiteChip(
-                  icon: Icons.flash_on_rounded, label: data.budgetRangeLabel),
-              _LiteChip(
-                  icon: Icons.schedule_rounded, label: data.deadlineLabel),
-              _LiteChip(
-                  icon: Icons.access_time_rounded, label: data.postedLabel),
+                  icon: Icons.access_time_rounded, label: 'Status: ${data.status}'),
             ],
           ),
           const SizedBox(height: 16),
@@ -233,11 +264,8 @@ class _RecommendedProjectCard extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: ElevatedButton.icon(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => FreelancerTaskDetailScreen(task: data),
-                  ),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Detail proyek: $judul')),
                 );
               },
               icon: const Icon(Icons.send_rounded, size: 18),

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../models/task_models.dart';
-import '../../services/mock_task_service.dart';
+import '../../models/project_model.dart';
+import '../../providers/project_provider.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/status_badge.dart';
-import 'freelancer_task_detail_screen.dart';
 
 class FreelancerSearchScreen extends StatefulWidget {
   const FreelancerSearchScreen({super.key});
@@ -14,9 +14,16 @@ class FreelancerSearchScreen extends StatefulWidget {
 }
 
 class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
-  final _taskService = MockTaskService();
   final _searchController = TextEditingController();
   String? _selectedCategory;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProjectProvider>().fetchProjects();
+    });
+  }
 
   @override
   void dispose() {
@@ -26,20 +33,6 @@ class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final tasks = _taskService.getAvailableTasks();
-    final filteredTasks = tasks.where((task) {
-      final matchesSearch = _searchController.text.trim().isEmpty ||
-          task.title
-              .toLowerCase()
-              .contains(_searchController.text.toLowerCase()) ||
-          task.category
-              .toLowerCase()
-              .contains(_searchController.text.toLowerCase());
-      final matchesCategory =
-          _selectedCategory == null || task.category == _selectedCategory;
-      return matchesSearch && matchesCategory;
-    }).toList();
-
     return Scaffold(
       appBar: AppBar(title: const Text('Cari Tugas')),
       body: Column(
@@ -48,7 +41,9 @@ class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
             padding: const EdgeInsets.all(16),
             child: TextField(
               controller: _searchController,
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) {
+                setState(() {});
+              },
               decoration: InputDecoration(
                 hintText: 'Cari tugas berdasarkan judul atau kategori...',
                 prefixIcon: const Icon(Icons.search),
@@ -60,16 +55,105 @@ class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
             ),
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: filteredTasks
-                  .map(
-                    (task) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _TaskCard(task: task),
+            child: Consumer<ProjectProvider>(
+              builder: (context, projectProvider, _) {
+                if (projectProvider.isLoading) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+
+                if (projectProvider.errorMessage != null) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          size: 64,
+                          color: Color(0xFFDC2626),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Gagal memuat data',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          projectProvider.errorMessage ?? 'Terjadi kesalahan',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Color(0xFF64748B)),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            projectProvider.fetchProjects();
+                          },
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Coba Lagi'),
+                        ),
+                      ],
                     ),
-                  )
-                  .toList(),
+                  );
+                }
+
+                final filteredProjects = projectProvider.projects
+                    .where((project) {
+                      final matchesSearch =
+                          _searchController.text.trim().isEmpty ||
+                              (project.judul
+                                      ?.toLowerCase()
+                                      .contains(
+                                          _searchController.text.toLowerCase()) ??
+                                  false) ||
+                              (project.kategori?.namaKategori
+                                      ?.toLowerCase()
+                                      .contains(
+                                          _searchController.text.toLowerCase()) ??
+                                  false);
+                      final matchesCategory = _selectedCategory == null ||
+                          project.kategori?.namaKategori == _selectedCategory;
+                      return matchesSearch && matchesCategory;
+                    })
+                    .toList();
+
+                if (filteredProjects.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Belum ada proyek yang tersedia',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Coba ubah filter atau cari kembali nanti.',
+                          style: TextStyle(color: Color(0xFF64748B)),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: filteredProjects
+                      .map(
+                        (project) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _ProjectCard(project: project),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
             ),
           ),
         ],
@@ -78,7 +162,14 @@ class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
   }
 
   void _showFilterSheet(BuildContext context) {
-    final categories = _taskService.getClientCategories();
+    final projectProvider = context.read<ProjectProvider>();
+    final allProjects = projectProvider.projects;
+    final uniqueCategories = <String>{};
+    for (var project in allProjects) {
+      if (project.kategori?.namaKategori != null) {
+        uniqueCategories.add(project.kategori!.namaKategori!);
+      }
+    }
 
     showModalBottomSheet<void>(
       context: context,
@@ -100,13 +191,13 @@ class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
                     Navigator.pop(context);
                   },
                 ),
-                ...categories.map(
-                  (category) => ChoiceChip(
-                    label: Text(category.title),
-                    selected: _selectedCategory == category.title,
+                ...uniqueCategories.map(
+                  (categoryName) => ChoiceChip(
+                    label: Text(categoryName),
+                    selected: _selectedCategory == categoryName,
                     onSelected: (_) {
                       setState(() {
-                        _selectedCategory = category.title;
+                        _selectedCategory = categoryName;
                       });
                       Navigator.pop(context);
                     },
@@ -121,10 +212,10 @@ class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
   }
 }
 
-class _TaskCard extends StatelessWidget {
-  final AvailableTask task;
+class _ProjectCard extends StatelessWidget {
+  final ProjectModel project;
 
-  const _TaskCard({required this.task});
+  const _ProjectCard({required this.project});
 
   @override
   Widget build(BuildContext context) {
@@ -152,7 +243,7 @@ class _TaskCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      task.title,
+                      project.judul ?? 'Untitled',
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 17,
@@ -161,7 +252,7 @@ class _TaskCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      task.description,
+                      project.deskripsi ?? '',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -174,7 +265,7 @@ class _TaskCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               StatusBadge(
-                label: task.category,
+                label: project.kategori?.namaKategori ?? 'Umum',
                 color: const Color(0xFF059669),
               ),
             ],
@@ -185,14 +276,24 @@ class _TaskCard extends StatelessWidget {
             runSpacing: 8,
             children: [
               _FilterChip(
-                  icon: Icons.wallet_outlined,
-                  label: formatRupiah(task.initialBudget)),
+                icon: Icons.wallet_outlined,
+                label:
+                    '${formatRupiah(project.anggaranMin ?? 0)} - ${formatRupiah(project.anggaranMax ?? 0)}',
+              ),
               _FilterChip(
-                  icon: Icons.schedule_rounded, label: task.deadlineLabel),
+                icon: Icons.schedule_rounded,
+                label: project.deadline != null
+                    ? '${project.deadline!.difference(DateTime.now()).inDays} hari'
+                    : 'TBD',
+              ),
               _FilterChip(
-                  icon: Icons.person_outline_rounded, label: task.clientName),
+                icon: Icons.person_outline_rounded,
+                label: project.client?.namaKontak ?? 'Client',
+              ),
               _FilterChip(
-                  icon: Icons.location_on_outlined, label: task.location),
+                icon: Icons.location_on_outlined,
+                label: project.client?.alamat ?? 'Online',
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -200,7 +301,7 @@ class _TaskCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '${task.applicantsCount} freelancer melamar • ${task.postedLabel}',
+                  'Status: ${project.status ?? 'unknown'}',
                   style: const TextStyle(
                     color: Color(0xFF64748B),
                     fontWeight: FontWeight.w600,
@@ -210,10 +311,9 @@ class _TaskCard extends StatelessWidget {
               const SizedBox(width: 12),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => FreelancerTaskDetailScreen(task: task),
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Detail proyek: ${project.judul}'),
                     ),
                   );
                 },

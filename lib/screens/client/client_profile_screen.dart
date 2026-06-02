@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../models/app_user.dart';
 import '../../models/user_role.dart';
 import '../../services/auth_service.dart';
+import '../../services/session_service.dart';
 import '../../widgets/auth_flow_widgets.dart';
 import '../role_selection_screen.dart';
 import '../shared/edit_profile_screen.dart';
@@ -50,7 +52,7 @@ class ClientProfileScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
         children: [
-          const _ClientProfileHero(),
+          _ClientProfileHero(),
           const SizedBox(height: 16),
           const _ProfileCompletionCard(),
           const SizedBox(height: 16),
@@ -158,11 +160,24 @@ class ClientProfileScreen extends StatelessWidget {
 }
 
 class _ClientProfileHero extends StatelessWidget {
-  const _ClientProfileHero();
+  _ClientProfileHero({super.key});
+
+  final SessionService _sessionService = SessionService();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return FutureBuilder<AppUser?>(
+      future: _sessionService.getSession(),
+      builder: (context, snapshot) {
+        final user = snapshot.data;
+        final displayName = user?.fullName.isNotEmpty == true
+            ? user!.fullName
+            : 'PT Maju Bersama';
+        final email = user?.email.isNotEmpty == true
+            ? user!.email
+            : 'info@majubersama.com';
+
+        return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: AuthFlowPalette.backgroundGradient,
@@ -203,10 +218,10 @@ class _ClientProfileHero extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'PT Maju Bersama',
-                            style: TextStyle(
+                            displayName,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
@@ -254,6 +269,8 @@ class _ClientProfileHero extends StatelessWidget {
           ),
         ],
       ),
+    );
+      },
     );
   }
 }

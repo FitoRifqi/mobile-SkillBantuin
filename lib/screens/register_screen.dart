@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/auth_flow_mode.dart';
 import '../models/user_role.dart';
-import '../services/auth_service.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/auth_flow_widgets.dart';
 import 'main_navigation_screen.dart';
 import 'role_selection_screen.dart';
@@ -27,13 +28,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _authService = AuthService();
 
   late final UserRole _selectedRole;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _keepSignedIn = true;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -55,23 +54,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    final authProvider = context.read<AuthProvider>();
 
-    try {
-      await _authService.register(
-        fullName: _fullNameController.text,
-        email: _emailController.text,
-        username: _usernameController.text,
-        phoneNumber: _phoneController.text,
-        password: _passwordController.text,
-        role: _selectedRole,
-        keepSignedIn: _keepSignedIn,
-      );
+    await authProvider.register(
+      fullName: _fullNameController.text,
+      email: _emailController.text,
+      username: _usernameController.text,
+      phoneNumber: _phoneController.text,
+      password: _passwordController.text,
+      role: _selectedRole,
+      keepSignedIn: _keepSignedIn,
+    );
 
-      if (!mounted) return;
+    if (!mounted) return;
 
+    if (authProvider.isAuthenticated) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Akun berhasil dibuat.'),
@@ -88,22 +85,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         (route) => false,
       );
-    } on AuthException catch (error) {
-      _showInfoMessage(error.message);
-    } catch (_) {
-      _showInfoMessage('Gagal membuat akun. Coba lagi.');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      return;
     }
+
+    _showInfoMessage(
+      authProvider.error ?? 'Gagal membuat akun. Coba lagi.',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final spacing = authVerticalSpacing(context);
+    final authProvider = context.watch<AuthProvider>();
     final isClient = _selectedRole == UserRole.client;
 
     return Scaffold(
@@ -360,10 +353,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 18),
                         AuthPrimaryButton(
-                          label:
-                              _isLoading ? 'Memproses...' : 'Daftar Sekarang',
-                          onPressed: _isLoading ? null : _handleRegister,
-                          trailing: _isLoading
+                          label: authProvider.isLoading
+                              ? 'Memproses...'
+                              : 'Daftar Sekarang',
+                          onPressed:
+                              authProvider.isLoading ? null : _handleRegister,
+                          trailing: authProvider.isLoading
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,

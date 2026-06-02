@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../models/project_model.dart';
 import '../../models/task_models.dart';
 import '../../models/user_role.dart';
-import '../../models/workflow_results.dart';
-import '../../services/mock_task_service.dart';
+import '../../providers/project_provider.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/app_ui.dart';
 import '../../widgets/auth_flow_widgets.dart';
@@ -30,9 +31,16 @@ class _ClientActivityView extends StatefulWidget {
 }
 
 class _ClientActivityViewState extends State<_ClientActivityView> {
-  final _taskService = MockTaskService();
   final _searchController = TextEditingController();
   TaskStatus? _selectedStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProjectProvider>().fetchMyProjects();
+    });
+  }
 
   @override
   void dispose() {
@@ -40,133 +48,194 @@ class _ClientActivityViewState extends State<_ClientActivityView> {
     super.dispose();
   }
 
+  bool _matchesSelectedStatus(ProjectModel project) {
+    if (_selectedStatus == null) return true;
+    final normalized = project.status?.toLowerCase() ?? '';
+
+    switch (_selectedStatus!) {
+      case TaskStatus.open:
+      case TaskStatus.waitingOffer:
+        return normalized.contains('open') || normalized.contains('waiting');
+      case TaskStatus.negotiation:
+        return normalized.contains('negotiation');
+      case TaskStatus.waitingPayment:
+        return normalized.contains('waiting payment') || normalized.contains('payment');
+      case TaskStatus.paymentVerified:
+        return normalized.contains('verified') || normalized.contains('payment');
+      case TaskStatus.onProgress:
+        return normalized.contains('progress');
+      case TaskStatus.submitted:
+        return normalized.contains('submitted');
+      case TaskStatus.completed:
+        return normalized.contains('completed') || normalized.contains('done');
+      case TaskStatus.cancelled:
+        return normalized.contains('cancel');
+      case TaskStatus.overdue:
+        return normalized.contains('overdue');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final allTasks = _taskService.getClientTasks();
-    final query = _searchController.text.trim().toLowerCase();
-    final filteredTasks = allTasks.where((task) {
-      final matchesStatus =
-          _selectedStatus == null || task.status == _selectedStatus;
-      final matchesSearch = query.isEmpty ||
-          task.title.toLowerCase().contains(query) ||
-          task.category.toLowerCase().contains(query) ||
-          task.nearestAction.toLowerCase().contains(query) ||
-          task.deadlineLabel.toLowerCase().contains(query) ||
-          (task.assignedFreelancer?.toLowerCase().contains(query) ?? false) ||
-          taskStatusLabel(task.status).toLowerCase().contains(query);
+    return Consumer<ProjectProvider>(
+      builder: (context, provider, child) {
+        final query = _searchController.text.trim().toLowerCase();
+        final filteredProjects = provider.projects.where((project) {
+          final matchesStatus = _matchesSelectedStatus(project);
+          final matchesSearch = query.isEmpty ||
+              (project.judul?.toLowerCase().contains(query) ?? false) ||
+              (project.deskripsi?.toLowerCase().contains(query) ?? false) ||
+              (project.kategori?.namaKategori?.toLowerCase().contains(query) ?? false) ||
+              _ActivityProjectCard._projectNearestAction(project.status)
+                  .toLowerCase()
+                  .contains(query) ||
+              _ActivityProjectCard._projectStatusLabel(project.status)
+                  .toLowerCase()
+                  .contains(query);
+          return matchesStatus && matchesSearch;
+        }).toList();
 
-      return matchesStatus && matchesSearch;
-    }).toList();
-
-    return Scaffold(
-      backgroundColor: AppUi.pageBackground,
-      appBar: AppBar(
-        title: const Text('Aktivitas Client'),
-        actions: [
-          IconButton(
-            tooltip: 'Notifikasi',
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      const NotificationScreen(userRole: UserRole.client),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: AppUi.pagePadding,
-        children: [
-          AppCard(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: _searchController,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: 'Cari aktivitas, kategori, atau freelancer...',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    suffixIcon: query.isEmpty
-                        ? null
-                        : IconButton(
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {});
-                            },
-                            icon: const Icon(Icons.close_rounded),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  'Status Tugas',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('Semua'),
-                      selected: _selectedStatus == null,
-                      onSelected: (_) {
-                        setState(() {
-                          _selectedStatus = null;
-                        });
-                      },
+        return Scaffold(
+          backgroundColor: AppUi.pageBackground,
+          appBar: AppBar(
+            title: const Text('Aktivitas Client'),
+            actions: [
+              IconButton(
+                tooltip: 'Notifikasi',
+                icon: const Icon(Icons.notifications_none_rounded),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const NotificationScreen(userRole: UserRole.client),
                     ),
-                    ...TaskStatus.values.map(
-                      (status) => ChoiceChip(
-                        label: Text(taskStatusLabel(status)),
-                        selected: _selectedStatus == status,
-                        onSelected: (_) {
-                          setState(() {
-                            _selectedStatus = status;
-                          });
-                        },
+                  );
+                },
+              ),
+            ],
+          ),
+          body: ListView(
+            padding: AppUi.pagePadding,
+            children: [
+              AppCard(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _searchController,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        hintText: 'Cari aktivitas, kategori, atau freelancer...',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        suffixIcon: query.isEmpty
+                            ? null
+                            : IconButton(
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {});
+                                },
+                                icon: const Icon(Icons.close_rounded),
+                              ),
                       ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Status Tugas',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('Semua'),
+                          selected: _selectedStatus == null,
+                          onSelected: (_) {
+                            setState(() {
+                              _selectedStatus = null;
+                            });
+                          },
+                        ),
+                        ...TaskStatus.values.map(
+                          (status) => ChoiceChip(
+                            label: Text(taskStatusLabel(status)),
+                            selected: _selectedStatus == status,
+                            onSelected: (_) {
+                              setState(() {
+                                _selectedStatus = status;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (filteredTasks.isEmpty)
-            const AppEmptyState(
-              icon: Icons.inbox_outlined,
-              title: 'Aktivitas tidak ditemukan',
-              message:
-                  'Ubah kata kunci atau filter status untuk melihat lainnya.',
-            )
-          else
-            ...filteredTasks.map(
-              (task) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _ActivityTaskCard(task: task),
               ),
-            ),
-        ],
-      ),
+              const SizedBox(height: 16),
+              if (provider.isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (provider.errorMessage != null)
+                AppCard(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Gagal memuat proyek: ${provider.errorMessage}',
+                        style: const TextStyle(
+                          color: AuthFlowPalette.textSecondary,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () {
+                          provider.fetchMyProjects();
+                        },
+                        child: const Text('Coba lagi'),
+                      ),
+                    ],
+                  ),
+                )
+              else if (filteredProjects.isEmpty)
+                const AppEmptyState(
+                  icon: Icons.inbox_outlined,
+                  title: 'Aktivitas tidak ditemukan',
+                  message:
+                      'Ubah kata kunci atau filter status untuk melihat lainnya.',
+                )
+              else
+                ...filteredProjects.map(
+                  (project) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _ActivityProjectCard(project: project),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
 
-class _ActivityTaskCard extends StatelessWidget {
-  final ClientTask task;
+class _ActivityProjectCard extends StatelessWidget {
+  final ProjectModel project;
 
-  const _ActivityTaskCard({required this.task});
+  const _ActivityProjectCard({required this.project});
 
   @override
   Widget build(BuildContext context) {
@@ -183,7 +252,7 @@ class _ActivityTaskCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      task.title,
+                      project.judul ?? 'Judul tidak tersedia',
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
@@ -192,7 +261,7 @@ class _ActivityTaskCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      task.nearestAction,
+                      _projectNearestAction(project.status),
                       style: const TextStyle(
                         color: AuthFlowPalette.textSecondary,
                         height: 1.45,
@@ -203,8 +272,8 @@ class _ActivityTaskCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               StatusBadge(
-                label: taskStatusLabel(task.status),
-                color: taskStatusColor(task.status),
+                label: _projectStatusLabel(project.status),
+                color: _projectStatusColor(project.status),
               ),
             ],
           ),
@@ -213,16 +282,24 @@ class _ActivityTaskCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _MiniChip(icon: Icons.sell_outlined, label: task.category),
               _MiniChip(
-                  icon: Icons.schedule_rounded, label: task.deadlineLabel),
+                icon: Icons.sell_outlined,
+                label: project.kategori?.namaKategori ?? 'Kategori lain',
+              ),
+              _MiniChip(
+                icon: Icons.schedule_rounded,
+                label: _projectDeadlineLabel(project.deadline),
+              ),
               _MiniChip(
                 icon: Icons.wallet_outlined,
-                label: formatRupiah(task.agreedBudget ?? task.initialBudget),
+                label: _projectBudgetLabel(project),
               ),
               _MiniChip(
                 icon: Icons.person_outline_rounded,
-                label: task.assignedFreelancer ?? 'Belum ada freelancer',
+                label: project.offers?.isNotEmpty == true
+                    ? project.offers!.first.freelancer?.namaLengkap ??
+                        'Freelancer terdaftar'
+                    : 'Belum ada freelancer',
               ),
             ],
           ),
@@ -235,7 +312,9 @@ class _ActivityTaskCard extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ClientTaskDetailScreen(task: task),
+                        builder: (_) => ClientTaskDetailScreen(
+                          task: _projectToClientTask(project),
+                        ),
                       ),
                     );
                   },
@@ -245,8 +324,37 @@ class _ActivityTaskCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => _handlePrimaryAction(context),
-                  child: Text(_primaryActionLabel()),
+                  onPressed: () {
+                    final task = _projectToClientTask(project);
+                    if (task.status == TaskStatus.waitingPayment) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ClientPaymentScreen(task: task),
+                        ),
+                      );
+                      return;
+                    }
+
+                    if (task.status == TaskStatus.completed ||
+                        task.status == TaskStatus.submitted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ClientReviewScreen(task: task),
+                        ),
+                      );
+                      return;
+                    }
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ClientTaskDetailScreen(task: task),
+                      ),
+                    );
+                  },
+                  child: Text(_primaryActionLabel(project.status)),
                 ),
               ),
             ],
@@ -256,60 +364,111 @@ class _ActivityTaskCard extends StatelessWidget {
     );
   }
 
-  String _primaryActionLabel() {
-    if (task.status == TaskStatus.waitingPayment) return 'Bayar Sekarang';
-    if (task.status == TaskStatus.completed ||
-        task.status == TaskStatus.submitted) {
+  String _primaryActionLabel(String? status) {
+    final mapped = _projectStatusToTaskStatus(status);
+    if (mapped == TaskStatus.waitingPayment) return 'Bayar Sekarang';
+    if (mapped == TaskStatus.completed || mapped == TaskStatus.submitted) {
       return 'Review';
     }
     return 'Lanjut';
   }
 
-  void _handlePrimaryAction(BuildContext context) async {
-    if (task.status == TaskStatus.waitingPayment) {
-      final result = await Navigator.push<PaymentSubmissionResult>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ClientPaymentScreen(task: task),
-        ),
-      );
-      if (result != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Menunggu pembayaran Midtrans.',
-            ),
-          ),
-        );
-      }
-      return;
-    }
+  static String _projectDeadlineLabel(DateTime? deadline) {
+    if (deadline == null) return 'TBD';
+    return '${deadline.day}/${deadline.month}/${deadline.year}';
+  }
 
-    if (task.status == TaskStatus.completed ||
-        task.status == TaskStatus.submitted) {
-      final result = await Navigator.push<ReviewSubmissionResult>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ClientReviewScreen(task: task),
-        ),
-      );
-      if (result != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Review ${result.rating} bintang tersimpan.',
-            ),
-          ),
-        );
-      }
-      return;
+  static String _projectBudgetLabel(ProjectModel project) {
+    final minBudget = project.anggaranMin ?? 0;
+    final maxBudget = project.anggaranMax;
+    if (maxBudget != null && maxBudget > minBudget) {
+      return '${formatRupiah(minBudget)} - ${formatRupiah(maxBudget)}';
     }
+    return formatRupiah(minBudget);
+  }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ClientTaskDetailScreen(task: task),
-      ),
+  static String _projectNearestAction(String? status) {
+    final normalized = status?.toLowerCase() ?? '';
+    if (normalized.contains('open') || normalized.contains('waiting')) {
+      return 'Menunggu freelancer mengajukan penawaran';
+    }
+    if (normalized.contains('negotiation')) {
+      return 'Negosiasi penawaran freelancer';
+    }
+    if (normalized.contains('payment')) {
+      return 'Selesaikan pembayaran untuk memulai';
+    }
+    if (normalized.contains('progress')) {
+      return 'Lihat progres terbaru dari freelancer';
+    }
+    if (normalized.contains('submitted')) {
+      return 'Tinjau hasil pekerjaan yang dikirim';
+    }
+    if (normalized.contains('completed') || normalized.contains('done')) {
+      return 'Tugas sudah selesai';
+    }
+    return 'Periksa detail tugas';
+  }
+
+  static String _projectStatusLabel(String? status) {
+    final mapped = _projectStatusToTaskStatus(status);
+    return taskStatusLabel(mapped);
+  }
+
+  static Color _projectStatusColor(String? status) {
+    final mapped = _projectStatusToTaskStatus(status);
+    return taskStatusColor(mapped);
+  }
+
+  static TaskStatus _projectStatusToTaskStatus(String? status) {
+    final normalized = status?.toLowerCase() ?? '';
+    if (normalized.contains('completed') || normalized.contains('done')) {
+      return TaskStatus.completed;
+    }
+    if (normalized.contains('submitted')) {
+      return TaskStatus.submitted;
+    }
+    if (normalized.contains('payment')) {
+      if (normalized.contains('waiting') || normalized.contains('pending')) {
+        return TaskStatus.waitingPayment;
+      }
+      return TaskStatus.paymentVerified;
+    }
+    if (normalized.contains('progress')) {
+      return TaskStatus.onProgress;
+    }
+    if (normalized.contains('negotiation')) {
+      return TaskStatus.negotiation;
+    }
+    if (normalized.contains('open') || normalized.contains('waiting')) {
+      return TaskStatus.waitingOffer;
+    }
+    return TaskStatus.open;
+  }
+
+  static ClientTask _projectToClientTask(ProjectModel project) {
+    final mappedStatus = _projectStatusToTaskStatus(project.status);
+    final deadline = project.deadline;
+    return ClientTask(
+      id: project.id?.toString() ?? '',
+      title: project.judul ?? 'Judul tidak tersedia',
+      category: project.kategori?.namaKategori ?? 'Kategori lain',
+      description: project.deskripsi ?? '',
+      initialBudget: project.anggaranMin ?? 0,
+      agreedBudget: project.anggaranMax,
+      deadlineLabel: _projectDeadlineLabel(deadline),
+      createdAtLabel: 'Baru saja',
+      status: mappedStatus,
+      paymentStatus: mappedStatus == TaskStatus.waitingPayment
+          ? PaymentStatus.pending
+          : PaymentStatus.unpaid,
+      assistanceType: AssistanceType.online,
+      nearestAction: _projectNearestAction(project.status),
+      progress: mappedStatus == TaskStatus.onProgress ? 50 : 20,
+      offers: const [],
+      assignedFreelancer: project.offers?.isNotEmpty == true
+          ? project.offers!.first.freelancer?.namaLengkap
+          : null,
     );
   }
 }

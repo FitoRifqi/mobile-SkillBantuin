@@ -1,0 +1,81 @@
+import 'client_model.dart';
+import 'category_model.dart';
+import 'offer_model.dart';
+import 'bid_model.dart';
+
+class ProjectModel {
+  final int? id;
+  final int? clientId;
+  final int? kategoriId;
+  final String? judul;
+  final String? deskripsi;
+  final int? anggaranMin;
+  final int? anggaranMax;
+  final DateTime? deadline;
+  final String? status;
+  final ClientModel? client;
+  final CategoryModel? kategori;
+  final List<BidModel>? bids;
+  final List<OfferModel>? offers;
+
+  ProjectModel({
+    this.id,
+    this.clientId,
+    this.kategoriId,
+    this.judul,
+    this.deskripsi,
+    this.anggaranMin,
+    this.anggaranMax,
+    this.deadline,
+    this.status,
+    this.client,
+    this.kategori,
+    this.bids,
+    this.offers,
+  });
+
+  factory ProjectModel.fromJson(Map<String, dynamic> json) {
+    DateTime? parsedDeadline;
+    if (json['deadline'] != null) {
+      try {
+        parsedDeadline = DateTime.tryParse(json['deadline'].toString());
+      } catch (_) {
+        parsedDeadline = null;
+      }
+    }
+
+    return ProjectModel(
+      id: json['id'] != null ? int.tryParse(json['id'].toString()) : null,
+      clientId: json['client_id'] != null ? int.tryParse(json['client_id'].toString()) : null,
+      kategoriId: json['kategori_id'] != null ? int.tryParse(json['kategori_id'].toString()) : null,
+      judul: json['judul'] as String?,
+      deskripsi: json['deskripsi'] as String?,
+      anggaranMin: json['anggaran_min'] != null ? int.tryParse(json['anggaran_min'].toString()) : null,
+      anggaranMax: json['anggaran_max'] != null ? int.tryParse(json['anggaran_max'].toString()) : null,
+      deadline: parsedDeadline,
+      status: json['status'] as String?,
+      client: json['client'] != null ? ClientModel.fromJson(Map<String, dynamic>.from(json['client'])) : null,
+      kategori: json['kategori'] != null ? CategoryModel.fromJson(Map<String, dynamic>.from(json['kategori'])) : null,
+      bids: json['bids'] is List ? List<BidModel>.from((json['bids'] as List).map((e) => BidModel.fromJson(Map<String, dynamic>.from(e)))) : null,
+      offers: json['offers'] is List ? List<OfferModel>.from((json['offers'] as List).map((e) => OfferModel.fromJson(Map<String, dynamic>.from(e)))) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'client_id': clientId,
+      'kategori_id': kategoriId,
+      'judul': judul,
+      'deskripsi': deskripsi,
+      'anggaran_min': anggaranMin,
+      'anggaran_max': anggaranMax,
+      'deadline': deadline?.toIso8601String(),
+      'status': status,
+      'client': client?.toJson(),
+      'kategori': kategori?.toJson(),
+      'bids': bids?.map((b) => b.toJson()).toList(),
+      'offers': offers?.map((o) => o.toJson()).toList(),
+    };
+  }
+}

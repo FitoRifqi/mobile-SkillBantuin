@@ -39,6 +39,45 @@ enum AssistanceType {
   offline,
 }
 
+Map<String, dynamic> _asMap(dynamic raw) {
+  if (raw is Map<String, dynamic>) return raw;
+  if (raw is Map) return Map<String, dynamic>.from(raw);
+  return <String, dynamic>{};
+}
+
+String _stringValue(Map<String, dynamic> data, List<String> keys,
+    [String defaultValue = '']) {
+  for (final key in keys) {
+    if (data.containsKey(key) && data[key] != null) {
+      return data[key].toString();
+    }
+  }
+  return defaultValue;
+}
+
+int _intValue(Map<String, dynamic> data, List<String> keys,
+    [int defaultValue = 0]) {
+  final raw = _stringValue(data, keys);
+  return int.tryParse(raw) ?? defaultValue;
+}
+
+double _doubleValue(Map<String, dynamic> data, List<String> keys,
+    [double defaultValue = 0]) {
+  final raw = _stringValue(data, keys);
+  return double.tryParse(raw) ?? defaultValue;
+}
+
+T _enumValue<T>(Map<String, dynamic> data, List<String> keys, List<T> values,
+    String Function(T) name, T defaultValue) {
+  final raw = _stringValue(data, keys).toLowerCase();
+  for (final value in values) {
+    if (name(value).toLowerCase() == raw) {
+      return value;
+    }
+  }
+  return defaultValue;
+}
+
 class VolunteerOffer {
   final String id;
   final String freelancerName;
@@ -61,6 +100,30 @@ class VolunteerOffer {
     required this.message,
     required this.status,
   });
+
+  factory VolunteerOffer.fromJson(Map<String, dynamic> json) {
+    final data = _asMap(json);
+    return VolunteerOffer(
+      id: _stringValue(data, ['id', 'offerId', 'offer_id']),
+      freelancerName: _stringValue(
+          data, ['freelancerName', 'freelancer_name', 'name', 'freelancer']),
+      freelancerSkill:
+          _stringValue(data, ['freelancerSkill', 'freelancer_skill', 'skill']),
+      rating: _doubleValue(data, ['rating', 'rate']),
+      completedTasks: _intValue(data, ['completedTasks', 'completed_tasks']),
+      offeredBudget: _intValue(data, ['offeredBudget', 'offered_budget', 'budget']),
+      proposedDeadline:
+          _stringValue(data, ['proposedDeadline', 'proposed_deadline', 'deadline']),
+      message: _stringValue(data, ['message', 'note', 'description']),
+      status: _enumValue<OfferStatus>(
+        data,
+        ['status'],
+        OfferStatus.values,
+        (value) => value.name,
+        OfferStatus.pending,
+      ),
+    );
+  }
 }
 
 class ClientTask {
@@ -101,6 +164,66 @@ class ClientTask {
     this.attachmentName,
     this.assignedFreelancer,
   });
+
+  factory ClientTask.fromJson(Map<String, dynamic> json) {
+    final data = _asMap(json);
+    final offersRaw = data['offers'];
+    final offers = <VolunteerOffer>[];
+    if (offersRaw is List) {
+      offers.addAll(
+        offersRaw
+            .whereType<Map<String, dynamic>>()
+            .map(VolunteerOffer.fromJson),
+      );
+    }
+
+    return ClientTask(
+      id: _stringValue(data, ['id', 'taskId', 'task_id']),
+      title: _stringValue(data, ['title', 'name']),
+      category: _stringValue(data, ['category', 'taskCategory', 'task_category']),
+      description: _stringValue(data, ['description', 'detail', 'task_description']),
+      initialBudget:
+          _intValue(data, ['initialBudget', 'initial_budget', 'budget']),
+      agreedBudget:
+          _intValue(data, ['agreedBudget', 'agreed_budget', 'finalBudget']),
+      deadlineLabel: _stringValue(
+          data, ['deadlineLabel', 'deadline_label', 'deadline']),
+      createdAtLabel: _stringValue(
+          data, ['createdAtLabel', 'created_at_label', 'createdAt']),
+      status: _enumValue<TaskStatus>(
+        data,
+        ['status'],
+        TaskStatus.values,
+        (value) => value.name,
+        TaskStatus.open,
+      ),
+      paymentStatus: _enumValue<PaymentStatus>(
+        data,
+        ['paymentStatus', 'payment_status'],
+        PaymentStatus.values,
+        (value) => value.name,
+        PaymentStatus.unpaid,
+      ),
+      assistanceType: _enumValue<AssistanceType>(
+        data,
+        ['assistanceType', 'assistance_type'],
+        AssistanceType.values,
+        (value) => value.name,
+        AssistanceType.online,
+      ),
+      location: _stringValue(data, ['location', 'place']),
+      attachmentName:
+          _stringValue(data, ['attachmentName', 'attachment_name', 'attachment']),
+      nearestAction: _stringValue(
+          data, ['nearestAction', 'nearest_action', 'nextStep', 'next_step', 'action']),
+      progress: _intValue(data, ['progress', 'completion', 'percent']),
+      assignedFreelancer: _stringValue(
+        data,
+        ['assignedFreelancer', 'assigned_freelancer', 'freelancer'],
+      ),
+      offers: offers,
+    );
+  }
 }
 
 class HelperCategory {
@@ -111,6 +234,14 @@ class HelperCategory {
     required this.title,
     required this.subtitle,
   });
+
+  factory HelperCategory.fromJson(Map<String, dynamic> json) {
+    final data = _asMap(json);
+    return HelperCategory(
+      title: _stringValue(data, ['title', 'name']),
+      subtitle: _stringValue(data, ['subtitle', 'sub_title', 'description']),
+    );
+  }
 }
 
 class RecommendedFreelancer {
@@ -127,6 +258,17 @@ class RecommendedFreelancer {
     required this.responseTime,
     required this.baseRate,
   });
+
+  factory RecommendedFreelancer.fromJson(Map<String, dynamic> json) {
+    final data = _asMap(json);
+    return RecommendedFreelancer(
+      name: _stringValue(data, ['name']),
+      skill: _stringValue(data, ['skill', 'expertise']),
+      rating: _doubleValue(data, ['rating', 'rate']),
+      responseTime: _stringValue(data, ['responseTime', 'response_time']),
+      baseRate: _intValue(data, ['baseRate', 'base_rate', 'rate']),
+    );
+  }
 }
 
 class AvailableTask {
@@ -157,6 +299,34 @@ class AvailableTask {
     required this.budgetRangeLabel,
     required this.location,
   });
+
+  factory AvailableTask.fromJson(Map<String, dynamic> json) {
+    final data = _asMap(json);
+    return AvailableTask(
+      id: _stringValue(data, ['id', 'taskId', 'task_id']),
+      title: _stringValue(data, ['title', 'name']),
+      category: _stringValue(data, ['category', 'taskCategory', 'task_category']),
+      description: _stringValue(data, ['description', 'detail', 'task_description']),
+      initialBudget:
+          _intValue(data, ['initialBudget', 'initial_budget', 'budget']),
+      deadlineLabel: _stringValue(data, ['deadlineLabel', 'deadline_label', 'deadline']),
+      assistanceType: _enumValue<AssistanceType>(
+        data,
+        ['assistanceType', 'assistance_type'],
+        AssistanceType.values,
+        (value) => value.name,
+        AssistanceType.online,
+      ),
+      clientName: _stringValue(data, ['clientName', 'client_name', 'client']),
+      postedLabel:
+          _stringValue(data, ['postedLabel', 'posted_label', 'postedAt']),
+      applicantsCount:
+          _intValue(data, ['applicantsCount', 'applicants_count']),
+      budgetRangeLabel:
+          _stringValue(data, ['budgetRangeLabel', 'budget_range_label']),
+      location: _stringValue(data, ['location', 'place']),
+    );
+  }
 }
 
 class FreelancerApplication {
@@ -201,6 +371,29 @@ class FreelancerWorkItem {
     required this.status,
     required this.nextStep,
   });
+
+  factory FreelancerWorkItem.fromJson(Map<String, dynamic> json) {
+    final data = _asMap(json);
+    return FreelancerWorkItem(
+      id: _stringValue(data, ['id', 'workId', 'work_id']),
+      taskTitle:
+          _stringValue(data, ['taskTitle', 'task_title', 'title', 'name']),
+      clientName: _stringValue(data, ['clientName', 'client_name', 'client']),
+      deadlineLabel:
+          _stringValue(data, ['deadlineLabel', 'deadline_label', 'deadline']),
+      agreedBudget:
+          _intValue(data, ['agreedBudget', 'agreed_budget', 'budget']),
+      progress: _intValue(data, ['progress', 'completion', 'percent']),
+      status: _enumValue<WorkStatus>(
+        data,
+        ['status'],
+        WorkStatus.values,
+        (value) => value.name,
+        WorkStatus.notStarted,
+      ),
+      nextStep: _stringValue(data, ['nextStep', 'next_step', 'action']),
+    );
+  }
 }
 
 class EarningTransaction {
@@ -217,4 +410,21 @@ class EarningTransaction {
     required this.status,
     required this.dateLabel,
   });
+
+  factory EarningTransaction.fromJson(Map<String, dynamic> json) {
+    final data = _asMap(json);
+    return EarningTransaction(
+      id: _stringValue(data, ['id', 'transactionId', 'transaction_id']),
+      title: _stringValue(data, ['title', 'description', 'name']),
+      amount: _intValue(data, ['amount', 'value', 'total']),
+      status: _enumValue<PaymentStatus>(
+        data,
+        ['status'],
+        PaymentStatus.values,
+        (value) => value.name,
+        PaymentStatus.unpaid,
+      ),
+      dateLabel: _stringValue(data, ['dateLabel', 'date_label', 'date', 'createdAt']),
+    );
+  }
 }

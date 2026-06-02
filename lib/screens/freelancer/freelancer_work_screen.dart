@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../models/offer_model.dart';
 import '../../models/task_models.dart';
 import '../../models/user_role.dart';
 import '../../models/workflow_results.dart';
-import '../../services/mock_task_service.dart';
+import '../../services/marketplace_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/app_ui.dart';
 import '../../widgets/status_badge.dart';
@@ -18,9 +19,16 @@ class FreelancerWorkScreen extends StatefulWidget {
 }
 
 class _FreelancerWorkScreenState extends State<FreelancerWorkScreen> {
-  final _taskService = MockTaskService();
+  final _marketplaceService = MarketplaceService();
   final _searchController = TextEditingController();
   WorkStatus? _selectedStatus;
+  late Future<List<OfferModel>> _offersFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _offersFuture = _marketplaceService.fetchMyOffers();
+  }
 
   @override
   void dispose() {
@@ -30,20 +38,7 @@ class _FreelancerWorkScreenState extends State<FreelancerWorkScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final works = _taskService.getFreelancerWorks();
     final query = _searchController.text.trim().toLowerCase();
-    final filtered = works.where((item) {
-      final matchesStatus =
-          _selectedStatus == null || item.status == _selectedStatus;
-      final matchesSearch = query.isEmpty ||
-          item.taskTitle.toLowerCase().contains(query) ||
-          item.clientName.toLowerCase().contains(query) ||
-          item.nextStep.toLowerCase().contains(query) ||
-          item.deadlineLabel.toLowerCase().contains(query) ||
-          workStatusLabel(item.status).toLowerCase().contains(query);
-
-      return matchesStatus && matchesSearch;
-    }).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -132,27 +127,84 @@ class _FreelancerWorkScreenState extends State<FreelancerWorkScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          if (filtered.isEmpty)
-            const AppEmptyState(
-              icon: Icons.inbox_outlined,
-              title: 'Pekerjaan tidak ditemukan',
-              message: 'Coba ubah kata kunci atau filter status.',
-            )
-          else
-            ...filtered.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _WorkCard(item: item),
-              ),
-            ),
+          FutureBuilder<List<OfferModel>>(
+            future: _offersFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: Text(
+                    snapshot.error.toString(),
+                    style: const TextStyle(
+                      color: Color(0xFF64748B),
+                      height: 1.5,
+                    ),
+                  ),
+                );
+              }
+
+              final works = (snapshot.data ?? const <OfferModel>[])
+                  .where((offer) => offer.status == 'accepted')
+                  .where((offer) => _matchesWork(offer, query))
+                  .where((offer) =>
+                      _selectedStatus == null ||
+                      _workStatusFromOffer(offer) == _selectedStatus)
+                  .toList();
+
+              if (works.isEmpty) {
+                return const AppEmptyState(
+                  icon: Icons.inbox_outlined,
+                  title: 'Pekerjaan tidak ditemukan',
+                  message: 'Pekerjaan akan muncul setelah penawaran diterima.',
+                );
+              }
+
+              return Column(
+                children: works
+                    .map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _WorkCard(item: item),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+          ),
         ],
       ),
     );
   }
+
+  bool _matchesWork(OfferModel item, String query) {
+    if (query.isEmpty) return true;
+    final values = [
+      item.project?.judul,
+      item.project?.client?.namaKontak,
+      item.project?.client?.namaPerusahaan,
+      item.project?.status,
+      item.message,
+      workStatusLabel(_workStatusFromOffer(item)),
+    ].whereType<String>().map((value) => value.toLowerCase());
+    return values.any((value) => value.contains(query));
+  }
 }
 
 class _WorkCard extends StatelessWidget {
-  final FreelancerWorkItem item;
+  final OfferModel item;
 
   const _WorkCard({required this.item});
 
@@ -182,7 +234,7 @@ class _WorkCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item.taskTitle,
+                      item.project?.judul ?? 'Tugas #${item.projectId ?? '-'}',
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
@@ -191,7 +243,7 @@ class _WorkCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Client: ${item.clientName}',
+                      'Client: ${item.project?.client?.namaKontak ?? item.project?.client?.namaPerusahaan ?? 'Client'}',
                       style: const TextStyle(
                         color: Color(0xFF64748B),
                       ),
@@ -201,14 +253,14 @@ class _WorkCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               StatusBadge(
-                label: workStatusLabel(item.status),
-                color: workStatusColor(item.status),
+                label: workStatusLabel(_workStatusFromOffer(item)),
+                color: workStatusColor(_workStatusFromOffer(item)),
               ),
             ],
           ),
           const SizedBox(height: 14),
           Text(
-            item.nextStep,
+            _nextStepFromOffer(item),
             style: const TextStyle(
               color: Color(0xFF475569),
               height: 1.5,
@@ -219,7 +271,7 @@ class _WorkCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Budget ${formatRupiah(item.agreedBudget)}',
+                  'Budget ${formatRupiah(item.offeredBudget ?? 0)}',
                   style: const TextStyle(
                     color: Color(0xFF059669),
                     fontWeight: FontWeight.w800,
@@ -227,7 +279,7 @@ class _WorkCard extends StatelessWidget {
                 ),
               ),
               Text(
-                'Deadline ${item.deadlineLabel}',
+                'Deadline ${_deadlineLabel(item)}',
                 style: const TextStyle(
                   color: Color(0xFF64748B),
                   fontWeight: FontWeight.w600,
@@ -239,10 +291,10 @@ class _WorkCard extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
-              value: item.progress / 100,
+              value: _progressFromOffer(item) / 100,
               minHeight: 8,
               backgroundColor: const Color(0xFFE2E8F0),
-              color: workStatusColor(item.status),
+              color: workStatusColor(_workStatusFromOffer(item)),
             ),
           ),
           const SizedBox(height: 16),
@@ -253,7 +305,9 @@ class _WorkCard extends StatelessWidget {
                 final result = await Navigator.push<WorkSubmissionResult>(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => FreelancerUploadResultScreen(item: item),
+                    builder: (_) => FreelancerUploadResultScreen(
+                      item: _toWorkItem(item),
+                    ),
                   ),
                 );
                 if (result != null && context.mounted) {
@@ -273,5 +327,74 @@ class _WorkCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _deadlineLabel(OfferModel item) {
+    final deadline = item.project?.deadline;
+    if (deadline == null) return 'TBD';
+    final days = deadline.difference(DateTime.now()).inDays;
+    return days >= 0 ? '$days hari' : 'Lewat ${days.abs()} hari';
+  }
+
+  String _nextStepFromOffer(OfferModel item) {
+    final status = _workStatusFromOffer(item);
+    switch (status) {
+      case WorkStatus.notStarted:
+        return 'Penawaran diterima. Mulai kerjakan sesuai brief client.';
+      case WorkStatus.inProgress:
+        return 'Kerjakan tugas dan upload hasil saat sudah siap.';
+      case WorkStatus.waitingConfirmation:
+        return 'Hasil dikirim. Menunggu konfirmasi client.';
+      case WorkStatus.completed:
+        return 'Pekerjaan selesai.';
+      case WorkStatus.overdue:
+        return 'Deadline terlewat. Segera koordinasi dengan client.';
+    }
+  }
+
+  FreelancerWorkItem _toWorkItem(OfferModel item) {
+    return FreelancerWorkItem(
+      id: item.projectId?.toString() ?? item.project?.id?.toString() ?? '',
+      taskTitle: item.project?.judul ?? 'Tugas #${item.projectId ?? '-'}',
+      clientName: item.project?.client?.namaKontak ??
+          item.project?.client?.namaPerusahaan ??
+          'Client',
+      deadlineLabel: _deadlineLabel(item),
+      agreedBudget: item.offeredBudget ?? 0,
+      progress: _progressFromOffer(item),
+      status: _workStatusFromOffer(item),
+      nextStep: _nextStepFromOffer(item),
+    );
+  }
+}
+
+WorkStatus _workStatusFromOffer(OfferModel item) {
+  final deadline = item.project?.deadline;
+  if (deadline != null && deadline.isBefore(DateTime.now())) {
+    return WorkStatus.overdue;
+  }
+
+  switch (item.project?.status) {
+    case 'completed':
+      return WorkStatus.completed;
+    case 'in_progress':
+      return WorkStatus.inProgress;
+    default:
+      return WorkStatus.notStarted;
+  }
+}
+
+int _progressFromOffer(OfferModel item) {
+  switch (_workStatusFromOffer(item)) {
+    case WorkStatus.notStarted:
+      return 10;
+    case WorkStatus.inProgress:
+      return 50;
+    case WorkStatus.waitingConfirmation:
+      return 80;
+    case WorkStatus.completed:
+      return 100;
+    case WorkStatus.overdue:
+      return 35;
   }
 }

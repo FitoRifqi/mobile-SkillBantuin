@@ -32,6 +32,10 @@ class ClientTaskDetailScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _buildDetailCard(),
           const SizedBox(height: 16),
+          if (_hasSubmittedResult) ...[
+            _buildResultCard(),
+            const SizedBox(height: 16),
+          ],
           _buildOfferPreview(context),
           const SizedBox(height: 16),
           _buildActionPanel(context),
@@ -171,6 +175,31 @@ class ClientTaskDetailScreen extends StatelessWidget {
           _buildRow(
               'Freelancer terpilih', task.assignedFreelancer ?? 'Belum ada'),
           _buildRow('Aksi terdekat', task.nearestAction, isLast: true),
+        ],
+      ),
+    );
+  }
+
+  bool get _hasSubmittedResult {
+    return (task.resultFileName != null && task.resultFileName!.isNotEmpty) ||
+        (task.resultLink != null && task.resultLink!.isNotEmpty) ||
+        (task.resultNote != null && task.resultNote!.isNotEmpty);
+  }
+
+  Widget _buildResultCard() {
+    return _SectionCard(
+      title: 'Hasil Pekerjaan',
+      child: Column(
+        children: [
+          if (task.resultFileName != null && task.resultFileName!.isNotEmpty)
+            _buildRow('File hasil', task.resultFileName!),
+          if (task.resultLink != null && task.resultLink!.isNotEmpty)
+            _buildRow('Link hasil', task.resultLink!),
+          if (task.resultNote != null && task.resultNote!.isNotEmpty)
+            _buildRow('Catatan', task.resultNote!),
+          if (task.resultSubmittedAt != null &&
+              task.resultSubmittedAt!.isNotEmpty)
+            _buildRow('Dikirim pada', task.resultSubmittedAt!, isLast: true),
         ],
       ),
     );

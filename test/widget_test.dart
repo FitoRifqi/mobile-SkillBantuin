@@ -1,8 +1,15 @@
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skillbantuin/main.dart';
+import 'package:skillbantuin/providers/auth_provider.dart';
+import 'package:skillbantuin/providers/freelancer_provider.dart';
+import 'package:skillbantuin/providers/project_provider.dart';
+import 'package:skillbantuin/services/api_service.dart';
+import 'package:skillbantuin/services/auth_service.dart';
+import 'package:skillbantuin/services/session_service.dart';
 
 void main() {
   setUp(() {
@@ -61,5 +68,32 @@ Future<void> _pumpApp(WidgetTester tester) async {
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
-  await tester.pumpWidget(const SkillBantuinApp());
+  final preferences = await SharedPreferences.getInstance();
+  final sessionService = SessionService(sharedPreferences: preferences);
+  final apiService = ApiService();
+  final authService = AuthService(
+    apiService: apiService,
+    sessionService: sessionService,
+  );
+
+  await tester.pumpWidget(
+    MultiProvider(
+      providers: [
+        Provider<SharedPreferences>.value(value: preferences),
+        Provider<SessionService>.value(value: sessionService),
+        Provider<ApiService>.value(value: apiService),
+        Provider<AuthService>.value(value: authService),
+        ChangeNotifierProvider<AuthProvider>(
+          create: (_) => AuthProvider(authService)..initialize(),
+        ),
+        ChangeNotifierProvider<ProjectProvider>(
+          create: (_) => ProjectProvider(apiService, sessionService),
+        ),
+        ChangeNotifierProvider<FreelancerProvider>(
+          create: (_) => FreelancerProvider(apiService),
+        ),
+      ],
+      child: const SkillBantuinApp(),
+    ),
+  );
 }

@@ -1,6 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/task_models.dart';
 import '../../models/user_role.dart';
 import '../../providers/project_provider.dart';
 import '../../utils/task_ui_utils.dart';
@@ -10,6 +11,7 @@ import '../shared/notification_screen.dart';
 import 'freelancer_search_screen.dart';
 import 'freelancer_task_detail_screen.dart';
 import 'freelancer_work_screen.dart';
+
 class FreelancerHomeScreen extends StatefulWidget {
   const FreelancerHomeScreen({super.key});
 
@@ -145,12 +147,15 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
               }
 
               return Column(
-                children: projectProvider.projects.take(3).map(
+                children: projectProvider.projects
+                    .take(3)
+                    .map(
                       (project) => Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: _RecommendedProjectCard(data: project),
                       ),
-                    ).toList(),
+                    )
+                    .toList(),
               );
             },
           ),
@@ -164,10 +169,10 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
       width: 88,
       height: 88,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
+        color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Colors.white.withOpacity(0.18),
+          color: Colors.white.withValues(alpha: 0.18),
         ),
       ),
       child: const Icon(
@@ -233,9 +238,10 @@ class _RecommendedProjectCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B).withOpacity(0.12),
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -256,7 +262,9 @@ class _RecommendedProjectCard extends StatelessWidget {
               _LiteChip(icon: Icons.flash_on_rounded, label: budgetLabel),
               _LiteChip(icon: Icons.schedule_rounded, label: deadlineLabel),
               _LiteChip(
-                  icon: Icons.access_time_rounded, label: 'Status: ${data.status}'),
+                icon: Icons.access_time_rounded,
+                label: 'Status: ${data.status}',
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -264,8 +272,21 @@ class _RecommendedProjectCard extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: ElevatedButton.icon(
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Detail proyek: $judul')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FreelancerTaskDetailScreen(
+                      task: _projectToAvailableTask(
+                        judul: judul,
+                        kategoriNama: kategoriNama,
+                        clientNama: clientNama,
+                        anggaranMin: anggaran,
+                        anggaranMax: data.anggaranMax,
+                        deadline: deadline,
+                        deskripsi: deskripsi,
+                      ),
+                    ),
+                  ),
                 );
               },
               icon: const Icon(Icons.send_rounded, size: 18),
@@ -274,6 +295,35 @@ class _RecommendedProjectCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  AvailableTask _projectToAvailableTask({
+    required String judul,
+    required String kategoriNama,
+    required String clientNama,
+    required int anggaranMin,
+    required int? anggaranMax,
+    required DateTime? deadline,
+    required String deskripsi,
+  }) {
+    final maxBudget = anggaranMax ?? anggaranMin;
+    return AvailableTask(
+      id: data.id?.toString() ?? '',
+      title: judul,
+      category: kategoriNama,
+      description: deskripsi,
+      initialBudget: maxBudget,
+      deadlineLabel: deadline != null
+          ? 'dalam ${deadline.difference(DateTime.now()).inDays} hari'
+          : 'TBD',
+      assistanceType: AssistanceType.online,
+      clientName: clientNama,
+      postedLabel: 'Terbaru',
+      applicantsCount: data.offers?.length ?? data.bids?.length ?? 0,
+      budgetRangeLabel:
+          '${formatRupiah(anggaranMin)} - ${formatRupiah(maxBudget)}',
+      location: data.client?.alamat ?? 'Online',
     );
   }
 }

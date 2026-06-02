@@ -59,9 +59,11 @@ class _ClientActivityViewState extends State<_ClientActivityView> {
       case TaskStatus.negotiation:
         return normalized.contains('negotiation');
       case TaskStatus.waitingPayment:
-        return normalized.contains('waiting payment') || normalized.contains('payment');
+        return normalized.contains('waiting payment') ||
+            normalized.contains('payment');
       case TaskStatus.paymentVerified:
-        return normalized.contains('verified') || normalized.contains('payment');
+        return normalized.contains('verified') ||
+            normalized.contains('payment');
       case TaskStatus.onProgress:
         return normalized.contains('progress');
       case TaskStatus.submitted:
@@ -85,7 +87,8 @@ class _ClientActivityViewState extends State<_ClientActivityView> {
           final matchesSearch = query.isEmpty ||
               (project.judul?.toLowerCase().contains(query) ?? false) ||
               (project.deskripsi?.toLowerCase().contains(query) ?? false) ||
-              (project.kategori?.namaKategori?.toLowerCase().contains(query) ?? false) ||
+              (project.kategori?.namaKategori?.toLowerCase().contains(query) ??
+                  false) ||
               _ActivityProjectCard._projectNearestAction(project.status)
                   .toLowerCase()
                   .contains(query) ||
@@ -127,7 +130,8 @@ class _ClientActivityViewState extends State<_ClientActivityView> {
                       controller: _searchController,
                       onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
-                        hintText: 'Cari aktivitas, kategori, atau freelancer...',
+                        hintText:
+                            'Cari aktivitas, kategori, atau freelancer...',
                         prefixIcon: const Icon(Icons.search_rounded),
                         suffixIcon: query.isEmpty
                             ? null
@@ -466,6 +470,11 @@ class _ActivityProjectCard extends StatelessWidget {
       nearestAction: _projectNearestAction(project.status),
       progress: mappedStatus == TaskStatus.onProgress ? 50 : 20,
       offers: const [],
+      resultFileName: project.resultFileName ?? project.resultFile,
+      resultFileUrl: project.resultFileUrl,
+      resultLink: project.resultLink,
+      resultNote: project.resultNote,
+      resultSubmittedAt: project.resultSubmittedAt,
       assignedFreelancer: project.offers?.isNotEmpty == true
           ? project.offers!.first.freelancer?.namaLengkap
           : null,

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/category_model.dart';
 import '../../models/task_models.dart';
 import '../../providers/project_provider.dart';
-import '../../utils/task_ui_utils.dart';
+import '../../services/marketplace_service.dart';
 import 'client_task_detail_screen.dart';
 
 class ClientSearchScreen extends StatefulWidget {
@@ -20,10 +21,14 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
   final _budgetController = TextEditingController(text: '30000');
   final _locationController = TextEditingController();
   final _attachmentController = TextEditingController();
+  final _marketplaceService = MarketplaceService();
 
   String? _selectedCategory;
+  List<CategoryModel> _categories = const [];
+  bool _isLoadingCategories = true;
   DateTime? _selectedDeadline;
   AssistanceType _assistanceType = AssistanceType.online;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -31,6 +36,7 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProjectProvider>().fetchProjects();
     });
+    _loadCategories();
   }
 
   @override
@@ -43,23 +49,39 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
     super.dispose();
   }
 
+  Future<void> _loadCategories() async {
+    try {
+      final categories = await _marketplaceService.fetchCategories();
+      if (!mounted) return;
+      setState(() {
+        _categories = categories;
+        _selectedCategory ??=
+            categories.isNotEmpty ? categories.first.namaKategori : null;
+        _isLoadingCategories = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoadingCategories = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memuat kategori: $error')),
+      );
+    }
+  }
+
   List<String> _buildCategoryOptions(ProjectProvider provider) {
-    final categories = provider.projects
-        .map((project) => project.kategori?.namaKategori)
+    final apiCategories = _categories
+        .map((category) => category.namaKategori)
         .whereType<String>()
         .where((value) => value.isNotEmpty)
         .toSet();
-    if (categories.isEmpty) {
-      return const [
-        'Desain Grafis',
-        'Programming',
-        'Translate',
-        'Data Entry',
-        'Akademik',
-        'Editing Video',
-      ];
-    }
-    return categories.toList();
+    if (apiCategories.isNotEmpty) return apiCategories.toList();
+
+    return provider.projects
+        .map((project) => project.kategori?.namaKategori)
+        .whereType<String>()
+        .where((value) => value.isNotEmpty)
+        .toSet()
+        .toList();
   }
 
   @override
@@ -148,10 +170,13 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: _selectedCategory,
+                        initialValue: _selectedCategory,
                         decoration: const InputDecoration(
                           labelText: 'Kategori skill',
                         ),
+                        hint: Text(_isLoadingCategories
+                            ? 'Memuat kategori...'
+                            : 'Pilih kategori skill'),
                         items: categories
                             .map(
                               (category) => DropdownMenuItem(
@@ -179,7 +204,8 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
                         maxLines: 6,
                         decoration: const InputDecoration(
                           labelText: 'Deskripsi',
-                          hintText: 'Jelaskan kebutuhan bantuan dengan jelas...',
+                          hintText:
+                              'Jelaskan kebutuhan bantuan dengan jelas...',
                           alignLabelWithHint: true,
                         ),
                         validator: (value) {
@@ -204,6 +230,16 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
                           if (value == null || value.trim().isEmpty) {
                             return 'Budget awal tidak boleh kosong';
                           }
+                          final budget = int.tryParse(value.trim());
+                          if (budget == null) {
+                            return 'Budget harus berupa angka';
+                          }
+                          if (budget < 1000) {
+                            return 'Budget minimal Rp1.000';
+                          }
+                          if (budget > 99998000) {
+                            return 'Budget maksimal Rp99.998.000';
+                          }
                           return null;
                         },
                       ),
@@ -217,7 +253,8 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.calendar_today_rounded, size: 18),
+                              const Icon(Icons.calendar_today_rounded,
+                                  size: 18),
                               const SizedBox(width: 10),
                               Text(
                                 _selectedDeadline == null
@@ -291,9 +328,11 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: _submitTask,
+                          onPressed: _isSubmitting ? null : _submitTask,
                           icon: const Icon(Icons.send_rounded, size: 18),
-                          label: const Text('Kirim Permintaan Bantuan'),
+                          label: Text(_isSubmitting
+                              ? 'Mengirim...'
+                              : 'Kirim Permintaan Bantuan'),
                         ),
                       ),
                     ],
@@ -329,7 +368,7 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
     });
   }
 
-  void _submitTask() {
+  Future<void> _submitTask() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDeadline == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -338,40 +377,81 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
       return;
     }
 
-    final newTask = ClientTask(
-      id: 'draft-task-${DateTime.now().millisecondsSinceEpoch}',
-      title: _titleController.text.trim(),
-      category: _selectedCategory ?? 'Kategori tidak diketahui',
-      description: _descriptionController.text.trim(),
-      initialBudget: int.tryParse(_budgetController.text.trim()) ?? 0,
-      deadlineLabel:
-          '${_selectedDeadline!.day}/${_selectedDeadline!.month}/${_selectedDeadline!.year}',
-      createdAtLabel: 'Hari ini',
-      status: TaskStatus.waitingOffer,
-      paymentStatus: PaymentStatus.unpaid,
-      assistanceType: _assistanceType,
-      nearestAction: 'Menunggu freelancer mengirim penawaran',
-      progress: 10,
-      offers: const [],
-      location: _assistanceType == AssistanceType.offline
-          ? _locationController.text.trim()
-          : null,
-      attachmentName: _attachmentController.text.isEmpty
-          ? null
-          : _attachmentController.text,
-    );
+    final provider = context.read<ProjectProvider>();
+    final selectedCategory = _categories
+        .where((category) => category.namaKategori == _selectedCategory)
+        .toList();
+    final matchedProjects = provider.projects
+        .where((project) => project.kategori?.namaKategori == _selectedCategory)
+        .toList();
+    final categoryId = selectedCategory.isNotEmpty
+        ? selectedCategory.first.id
+        : matchedProjects.isNotEmpty
+            ? matchedProjects.first.kategoriId
+            : null;
+    if (categoryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kategori belum tersedia dari Laravel. Coba refresh.'),
+        ),
+      );
+      return;
+    }
+    final budget = int.tryParse(_budgetController.text.trim()) ?? 0;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ClientTaskDetailScreen(task: newTask),
-      ),
-    );
+    setState(() => _isSubmitting = true);
+    try {
+      final createdProject = await _marketplaceService.createProject(
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        categoryId: categoryId,
+        budget: budget,
+        deadline: _selectedDeadline!,
+      );
+      if (!mounted) return;
+      provider.fetchMyProjects();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Bantuan berhasil dibuat.'),
-      ),
-    );
+      final newTask = ClientTask(
+        id: createdProject['id']?.toString() ??
+            'draft-task-${DateTime.now().millisecondsSinceEpoch}',
+        title: _titleController.text.trim(),
+        category: _selectedCategory ?? 'Kategori tidak diketahui',
+        description: _descriptionController.text.trim(),
+        initialBudget: budget,
+        deadlineLabel:
+            '${_selectedDeadline!.day}/${_selectedDeadline!.month}/${_selectedDeadline!.year}',
+        createdAtLabel: 'Hari ini',
+        status: TaskStatus.waitingOffer,
+        paymentStatus: PaymentStatus.unpaid,
+        assistanceType: _assistanceType,
+        nearestAction: 'Menunggu freelancer mengirim penawaran',
+        progress: 10,
+        offers: const [],
+        location: _assistanceType == AssistanceType.offline
+            ? _locationController.text.trim()
+            : null,
+        attachmentName: _attachmentController.text.isEmpty
+            ? null
+            : _attachmentController.text,
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ClientTaskDetailScreen(task: newTask),
+        ),
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bantuan berhasil dibuat di Laravel.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 }

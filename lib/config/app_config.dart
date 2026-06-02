@@ -10,7 +10,11 @@ class AppConfig {
   // Production URL - replace with your AWS API Gateway or load balancer domain
   static const String productionBaseUrl = 'https://YOUR_AWS_DOMAIN/api';
 
+  static const String overrideBaseUrl = String.fromEnvironment('API_BASE_URL');
+
   static String get baseUrl {
+    if (overrideBaseUrl.isNotEmpty) return overrideBaseUrl;
+
     return const bool.fromEnvironment('dart.vm.product')
         ? productionBaseUrl
         : localBaseUrl;

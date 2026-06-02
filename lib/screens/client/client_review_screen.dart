@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/task_models.dart';
 import '../../models/workflow_results.dart';
+import '../../services/marketplace_service.dart';
 
 class ClientReviewScreen extends StatefulWidget {
   final ClientTask task;
@@ -18,7 +19,9 @@ class ClientReviewScreen extends StatefulWidget {
 class _ClientReviewScreenState extends State<ClientReviewScreen> {
   final _formKey = GlobalKey<FormState>();
   final _commentController = TextEditingController();
+  final _marketplaceService = MarketplaceService();
   int _rating = 5;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -136,9 +139,10 @@ class _ClientReviewScreenState extends State<ClientReviewScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: _submitReview,
+                      onPressed: _isSubmitting ? null : _submitReview,
                       icon: const Icon(Icons.rate_review_rounded, size: 18),
-                      label: const Text('Kirim Review'),
+                      label:
+                          Text(_isSubmitting ? 'Mengirim...' : 'Kirim Review'),
                     ),
                   ),
                 ],
@@ -150,9 +154,26 @@ class _ClientReviewScreenState extends State<ClientReviewScreen> {
     );
   }
 
-  void _submitReview() {
+  Future<void> _submitReview() async {
     if (!_formKey.currentState!.validate()) return;
-    _showSuccessSheet();
+
+    setState(() => _isSubmitting = true);
+    try {
+      await _marketplaceService.submitReview(
+        projectId: widget.task.id,
+        rating: _rating,
+        comment: _commentController.text.trim(),
+      );
+      if (!mounted) return;
+      await _showSuccessSheet();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   Future<void> _showSuccessSheet() async {

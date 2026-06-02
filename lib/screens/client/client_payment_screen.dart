@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/task_models.dart';
 import '../../models/workflow_results.dart';
+import '../../services/marketplace_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/app_ui.dart';
 import '../../widgets/auth_flow_widgets.dart';
@@ -9,6 +10,7 @@ import '../../widgets/auth_flow_widgets.dart';
 class ClientPaymentScreen extends StatelessWidget {
   final ClientTask task;
   final VolunteerOffer? selectedOffer;
+  static final MarketplaceService _marketplaceService = MarketplaceService();
 
   const ClientPaymentScreen({
     super.key,
@@ -174,7 +176,7 @@ class ClientPaymentScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           ElevatedButton.icon(
-            onPressed: () => _simulateMidtransPayment(context),
+            onPressed: () => _startMidtransPayment(context),
             icon: const Icon(Icons.lock_rounded, size: 18),
             label: const Text('Bayar Sekarang'),
           ),
@@ -183,10 +185,31 @@ class ClientPaymentScreen extends StatelessWidget {
     );
   }
 
-  void _simulateMidtransPayment(BuildContext context) {
+  Future<void> _startMidtransPayment(BuildContext context) async {
+    try {
+      final payment = await _marketplaceService.createPayment(task.id);
+      if (!context.mounted) return;
+      _showMidtransResult(
+        context,
+        redirectUrl: payment['redirect_url']?.toString(),
+        orderId: payment['order_id']?.toString(),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
+  }
+
+  void _showMidtransResult(
+    BuildContext context, {
+    String? redirectUrl,
+    String? orderId,
+  }) {
     final result = PaymentSubmissionResult(
       paymentMethod: 'Midtrans',
-      proofFileName: 'midtrans-snap-pending',
+      proofFileName: orderId ?? 'midtrans-snap-pending',
       totalAmount: _totalPayment,
       paymentStatus: PaymentStatus.pending,
       nextTaskStatus: TaskStatus.waitingPayment,
@@ -219,6 +242,16 @@ class ClientPaymentScreen extends StatelessWidget {
                     height: 1.45,
                   ),
                 ),
+                if (redirectUrl != null && redirectUrl.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  SelectableText(
+                    redirectUrl,
+                    style: const TextStyle(
+                      color: AuthFlowPalette.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,

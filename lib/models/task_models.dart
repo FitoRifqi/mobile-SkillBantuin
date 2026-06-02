@@ -49,6 +49,7 @@ String _stringValue(Map<String, dynamic> data, List<String> keys,
     [String defaultValue = '']) {
   for (final key in keys) {
     if (data.containsKey(key) && data[key] != null) {
+      if (data[key] is Map) continue;
       return data[key].toString();
     }
   }
@@ -111,9 +112,15 @@ class VolunteerOffer {
           _stringValue(data, ['freelancerSkill', 'freelancer_skill', 'skill']),
       rating: _doubleValue(data, ['rating', 'rate']),
       completedTasks: _intValue(data, ['completedTasks', 'completed_tasks']),
-      offeredBudget: _intValue(data, ['offeredBudget', 'offered_budget', 'budget']),
-      proposedDeadline:
-          _stringValue(data, ['proposedDeadline', 'proposed_deadline', 'deadline']),
+      offeredBudget:
+          _intValue(data, ['offeredBudget', 'offered_budget', 'budget']),
+      proposedDeadline: _stringValue(
+        data,
+        ['proposedDeadline', 'proposed_deadline', 'deadline'],
+        data['proposed_deadline_days'] != null
+            ? '${data['proposed_deadline_days']} hari'
+            : '',
+      ),
       message: _stringValue(data, ['message', 'note', 'description']),
       status: _enumValue<OfferStatus>(
         data,
@@ -140,6 +147,14 @@ class ClientTask {
   final AssistanceType assistanceType;
   final String? location;
   final String? attachmentName;
+  final String? resultFileName;
+  final String? resultFileUrl;
+  final String? resultLink;
+  final String? resultNote;
+  final String? resultSubmittedAt;
+  final int? reviewRating;
+  final String? reviewComment;
+  final String? reviewedAt;
   final String nearestAction;
   final int progress;
   final String? assignedFreelancer;
@@ -162,6 +177,14 @@ class ClientTask {
     this.agreedBudget,
     this.location,
     this.attachmentName,
+    this.resultFileName,
+    this.resultFileUrl,
+    this.resultLink,
+    this.resultNote,
+    this.resultSubmittedAt,
+    this.reviewRating,
+    this.reviewComment,
+    this.reviewedAt,
     this.assignedFreelancer,
   });
 
@@ -179,17 +202,22 @@ class ClientTask {
 
     return ClientTask(
       id: _stringValue(data, ['id', 'taskId', 'task_id']),
-      title: _stringValue(data, ['title', 'name']),
-      category: _stringValue(data, ['category', 'taskCategory', 'task_category']),
-      description: _stringValue(data, ['description', 'detail', 'task_description']),
-      initialBudget:
-          _intValue(data, ['initialBudget', 'initial_budget', 'budget']),
-      agreedBudget:
-          _intValue(data, ['agreedBudget', 'agreed_budget', 'finalBudget']),
-      deadlineLabel: _stringValue(
-          data, ['deadlineLabel', 'deadline_label', 'deadline']),
-      createdAtLabel: _stringValue(
-          data, ['createdAtLabel', 'created_at_label', 'createdAt']),
+      title: _stringValue(data, ['title', 'name', 'judul']),
+      category: _stringValue(
+          data,
+          ['category', 'taskCategory', 'task_category'],
+          _stringValue(
+              _asMap(data['kategori']), ['nama_kategori', 'name'], 'Umum')),
+      description: _stringValue(
+          data, ['description', 'detail', 'task_description', 'deskripsi']),
+      initialBudget: _intValue(
+          data, ['initialBudget', 'initial_budget', 'budget', 'anggaran_max']),
+      agreedBudget: _intValue(data,
+          ['agreedBudget', 'agreed_budget', 'finalBudget', 'anggaran_max']),
+      deadlineLabel:
+          _stringValue(data, ['deadlineLabel', 'deadline_label', 'deadline']),
+      createdAtLabel: _stringValue(data,
+          ['createdAtLabel', 'created_at_label', 'createdAt', 'created_at']),
       status: _enumValue<TaskStatus>(
         data,
         ['status'],
@@ -212,10 +240,25 @@ class ClientTask {
         AssistanceType.online,
       ),
       location: _stringValue(data, ['location', 'place']),
-      attachmentName:
-          _stringValue(data, ['attachmentName', 'attachment_name', 'attachment']),
-      nearestAction: _stringValue(
-          data, ['nearestAction', 'nearest_action', 'nextStep', 'next_step', 'action']),
+      attachmentName: _stringValue(
+          data, ['attachmentName', 'attachment_name', 'attachment']),
+      resultFileName: _stringValue(
+          data, ['resultFileName', 'result_file_name', 'result_file']),
+      resultFileUrl: _stringValue(data, ['resultFileUrl', 'result_file_url']),
+      resultLink: _stringValue(data, ['resultLink', 'result_link']),
+      resultNote: _stringValue(data, ['resultNote', 'result_note']),
+      resultSubmittedAt:
+          _stringValue(data, ['resultSubmittedAt', 'result_submitted_at']),
+      reviewRating: _intValue(data, ['reviewRating', 'review_rating']),
+      reviewComment: _stringValue(data, ['reviewComment', 'review_comment']),
+      reviewedAt: _stringValue(data, ['reviewedAt', 'reviewed_at']),
+      nearestAction: _stringValue(data, [
+        'nearestAction',
+        'nearest_action',
+        'nextStep',
+        'next_step',
+        'action'
+      ]),
       progress: _intValue(data, ['progress', 'completion', 'percent']),
       assignedFreelancer: _stringValue(
         data,
@@ -304,12 +347,18 @@ class AvailableTask {
     final data = _asMap(json);
     return AvailableTask(
       id: _stringValue(data, ['id', 'taskId', 'task_id']),
-      title: _stringValue(data, ['title', 'name']),
-      category: _stringValue(data, ['category', 'taskCategory', 'task_category']),
-      description: _stringValue(data, ['description', 'detail', 'task_description']),
-      initialBudget:
-          _intValue(data, ['initialBudget', 'initial_budget', 'budget']),
-      deadlineLabel: _stringValue(data, ['deadlineLabel', 'deadline_label', 'deadline']),
+      title: _stringValue(data, ['title', 'name', 'judul']),
+      category: _stringValue(
+          data,
+          ['category', 'taskCategory', 'task_category'],
+          _stringValue(
+              _asMap(data['kategori']), ['nama_kategori', 'name'], 'Umum')),
+      description: _stringValue(
+          data, ['description', 'detail', 'task_description', 'deskripsi']),
+      initialBudget: _intValue(
+          data, ['initialBudget', 'initial_budget', 'budget', 'anggaran_max']),
+      deadlineLabel:
+          _stringValue(data, ['deadlineLabel', 'deadline_label', 'deadline']),
       assistanceType: _enumValue<AssistanceType>(
         data,
         ['assistanceType', 'assistance_type'],
@@ -317,14 +366,22 @@ class AvailableTask {
         (value) => value.name,
         AssistanceType.online,
       ),
-      clientName: _stringValue(data, ['clientName', 'client_name', 'client']),
-      postedLabel:
-          _stringValue(data, ['postedLabel', 'posted_label', 'postedAt']),
-      applicantsCount:
-          _intValue(data, ['applicantsCount', 'applicants_count']),
-      budgetRangeLabel:
-          _stringValue(data, ['budgetRangeLabel', 'budget_range_label']),
-      location: _stringValue(data, ['location', 'place']),
+      clientName: _stringValue(
+          data,
+          ['clientName', 'client_name'],
+          _stringValue(_asMap(data['client']),
+              ['nama_kontak', 'nama_perusahaan'], 'Client')),
+      postedLabel: _stringValue(
+          data, ['postedLabel', 'posted_label', 'postedAt', 'created_at']),
+      applicantsCount: _intValue(data, ['applicantsCount', 'applicants_count']),
+      budgetRangeLabel: _stringValue(
+          data,
+          ['budgetRangeLabel', 'budget_range_label'],
+          '${_intValue(data, ['anggaran_min'])} - ${_intValue(data, [
+                'anggaran_max'
+              ])}'),
+      location: _stringValue(data, ['location', 'place'],
+          _stringValue(_asMap(data['client']), ['alamat'], 'Online')),
     );
   }
 }
@@ -424,7 +481,8 @@ class EarningTransaction {
         (value) => value.name,
         PaymentStatus.unpaid,
       ),
-      dateLabel: _stringValue(data, ['dateLabel', 'date_label', 'date', 'createdAt']),
+      dateLabel:
+          _stringValue(data, ['dateLabel', 'date_label', 'date', 'createdAt']),
     );
   }
 }

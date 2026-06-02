@@ -92,8 +92,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) =>
-                              const NotificationScreen(userRole: UserRole.client),
+                          builder: (_) => const NotificationScreen(
+                              userRole: UserRole.client),
                         ),
                       );
                     },
@@ -181,10 +181,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       width: 88,
       height: 88,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
+        color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Colors.white.withOpacity(0.18),
+          color: Colors.white.withValues(alpha: 0.18),
         ),
       ),
       child: const Icon(
@@ -197,7 +197,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
 
   static bool _isActiveProject(ProjectModel project) {
     final status = project.status?.toLowerCase() ?? '';
-    return status.contains('progress') || status.contains('open') || status.contains('negotiation');
+    return status.contains('progress') ||
+        status.contains('open') ||
+        status.contains('negotiation');
   }
 
   static bool _isWaitingProject(ProjectModel project) {
@@ -394,6 +396,11 @@ class _ActiveProjectCard extends StatelessWidget {
       nearestAction: _projectNearestAction(project.status),
       progress: mappedStatus == TaskStatus.onProgress ? 50 : 20,
       offers: const [],
+      resultFileName: project.resultFileName ?? project.resultFile,
+      resultFileUrl: project.resultFileUrl,
+      resultLink: project.resultLink,
+      resultNote: project.resultNote,
+      resultSubmittedAt: project.resultSubmittedAt,
       assignedFreelancer: project.offers?.first.freelancer?.namaLengkap,
     );
   }

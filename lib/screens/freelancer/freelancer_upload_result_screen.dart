@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../models/task_models.dart';
 import '../../models/workflow_results.dart';
+import '../../services/marketplace_service.dart';
 
 class FreelancerUploadResultScreen extends StatefulWidget {
   final FreelancerWorkItem item;
@@ -22,6 +24,9 @@ class _FreelancerUploadResultScreenState
   final _fileController = TextEditingController();
   final _linkController = TextEditingController();
   final _noteController = TextEditingController();
+  final _marketplaceService = MarketplaceService();
+  String? _selectedFilePath;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -101,7 +106,7 @@ class _FreelancerUploadResultScreenState
                       borderRadius: BorderRadius.circular(18),
                     ),
                     child: const Text(
-                      'Upload hasil akan mensimulasikan status "hasil dikirim", lalu client bisa lanjut ke review dan rating.',
+                      'Upload file hasil asli dari perangkat, lalu client bisa melihat hasil dan lanjut ke review.',
                       style: TextStyle(
                         color: Color(0xFF64748B),
                         height: 1.5,
@@ -120,7 +125,9 @@ class _FreelancerUploadResultScreenState
                       ),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
+                      if (value == null ||
+                          value.isEmpty ||
+                          _selectedFilePath == null) {
                         return 'File hasil wajib dipilih';
                       }
                       return null;
@@ -155,10 +162,11 @@ class _FreelancerUploadResultScreenState
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: _submitResult,
+                      onPressed: _isSubmitting ? null : _submitResult,
                       icon: const Icon(Icons.check_circle_outline_rounded,
                           size: 18),
-                      label: const Text('Kirim Hasil'),
+                      label:
+                          Text(_isSubmitting ? 'Mengirim...' : 'Kirim Hasil'),
                     ),
                   ),
                 ],
@@ -170,15 +178,53 @@ class _FreelancerUploadResultScreenState
     );
   }
 
-  void _pickFile() {
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: false,
+      withData: false,
+    );
+
+    if (!mounted || result == null || result.files.isEmpty) return;
+
+    final file = result.files.single;
+    if (file.path == null || file.path!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('File ini belum bisa dibaca dari perangkat.'),
+        ),
+      );
+      return;
+    }
+
     setState(() {
-      _fileController.text = 'hasil-final-freelancer.zip';
+      _selectedFilePath = file.path;
+      _fileController.text = file.name;
     });
   }
 
-  void _submitResult() {
+  Future<void> _submitResult() async {
     if (!_formKey.currentState!.validate()) return;
-    _showSuccessSheet();
+    final filePath = _selectedFilePath;
+    if (filePath == null) return;
+
+    setState(() => _isSubmitting = true);
+    try {
+      await _marketplaceService.submitProjectResult(
+        projectId: widget.item.id,
+        resultFilePath: filePath,
+        resultLink: _linkController.text.trim(),
+        resultNote: _noteController.text.trim(),
+      );
+      if (!mounted) return;
+      await _showSuccessSheet();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   Future<void> _showSuccessSheet() async {

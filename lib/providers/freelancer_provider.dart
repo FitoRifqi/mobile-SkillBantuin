@@ -32,18 +32,9 @@ class FreelancerProvider extends ChangeNotifier {
 
       final resp = await apiService.get(path);
 
-      dynamic listData;
-      if (resp is Map && resp['data'] != null) {
-        listData = resp['data'];
-      } else if (resp is List) {
-        listData = resp;
-      } else if (resp is Map && resp['success'] == true && resp['data'] != null) {
-        listData = resp['data'];
-      } else {
-        listData = <dynamic>[];
-      }
-
-      final items = (listData as List).map((e) => FreelancerModel.fromJson(Map<String, dynamic>.from(e))).toList();
+      final items = LaravelResponse.extractList(resp)
+          .map(FreelancerModel.fromJson)
+          .toList();
 
       _freelancers
         ..clear()

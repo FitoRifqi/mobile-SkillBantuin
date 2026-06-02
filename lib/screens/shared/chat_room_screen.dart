@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../models/chat_models.dart';
+import '../../models/chat_message_model.dart';
 import '../../models/user_role.dart';
+import '../../services/marketplace_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/status_badge.dart';
 
@@ -21,12 +25,29 @@ class ChatRoomScreen extends StatefulWidget {
 
 class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final _messageController = TextEditingController();
+  final _marketplaceService = MarketplaceService();
   final List<ChatMessage> _draftMessages = [];
+  List<ChatMessage> _serverMessages = [];
+  bool _isLoadingMessages = true;
+  bool _isSending = false;
+  String? _loadError;
+  Timer? _refreshTimer;
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     _messageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMessages();
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 3),
+      (_) => _loadMessages(silent: true),
+    );
   }
 
   @override
@@ -34,7 +55,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final currentParty = widget.currentRole == UserRole.client
         ? ChatPartyRole.client
         : ChatPartyRole.freelancer;
-    final messages = [...widget.room.messages, ..._draftMessages];
+    final messages = [
+      ...(_serverMessages.isEmpty ? widget.room.messages : _serverMessages),
+      ..._draftMessages,
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -99,79 +123,99 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                final message = messages[index];
-                final isMine = message.sender == currentParty;
-
-                if (message.type == ChatMessageType.negotiation &&
-                    message.negotiation != null) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _NegotiationCard(
-                      isMine: isMine,
-                      message: message,
-                      onActionTap: (action) => _handleNegotiationAction(action),
-                    ),
-                  );
-                }
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Align(
-                    alignment:
-                        isMine ? Alignment.centerRight : Alignment.centerLeft,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 290),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
+            child: _isLoadingMessages
+                ? const Center(child: CircularProgressIndicator())
+                : _loadError != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            _loadError!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Color(0xFF64748B)),
+                          ),
                         ),
-                        decoration: BoxDecoration(
-                          color:
-                              isMine ? const Color(0xFF059669) : Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              message.content,
-                              style: TextStyle(
-                                color: isMine
-                                    ? Colors.white
-                                    : const Color(0xFF0F172A),
-                                height: 1.5,
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: messages.length,
+                        itemBuilder: (context, index) {
+                          final message = messages[index];
+                          final isMine = message.sender == currentParty;
+
+                          if (message.type == ChatMessageType.negotiation &&
+                              message.negotiation != null) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _NegotiationCard(
+                                isMine: isMine,
+                                message: message,
+                                onActionTap: (action) =>
+                                    _handleNegotiationAction(action),
+                              ),
+                            );
+                          }
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Align(
+                              alignment: isMine
+                                  ? Alignment.centerRight
+                                  : Alignment.centerLeft,
+                              child: ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 290),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isMine
+                                        ? const Color(0xFF059669)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(18),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black
+                                            .withValues(alpha: 0.04),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        message.content,
+                                        style: TextStyle(
+                                          color: isMine
+                                              ? Colors.white
+                                              : const Color(0xFF0F172A),
+                                          height: 1.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        '${message.timeLabel} • ${_chatStatusLabel(message.status)}',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: isMine
+                                              ? Colors.white
+                                                  .withValues(alpha: 0.72)
+                                              : const Color(0xFF94A3B8),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              '${message.timeLabel} • ${_chatStatusLabel(message.status)}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: isMine
-                                    ? Colors.white.withValues(alpha: 0.72)
-                                    : const Color(0xFF94A3B8),
-                              ),
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
-                    ),
-                  ),
-                );
-              },
-            ),
           ),
           SafeArea(
             top: false,
@@ -207,9 +251,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   const SizedBox(width: 8),
                   CircleAvatar(
                     radius: 22,
-                    backgroundColor: const Color(0xFF059669),
+                    backgroundColor: _isSending
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF059669),
                     child: IconButton(
-                      onPressed: () => _sendMessage(currentParty),
+                      onPressed:
+                          _isSending ? null : () => _sendMessage(currentParty),
                       icon: const Icon(Icons.send_rounded, color: Colors.white),
                     ),
                   ),
@@ -222,23 +269,68 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
-  void _sendMessage(ChatPartyRole currentParty) {
+  Future<void> _loadMessages({bool silent = false}) async {
+    try {
+      final messages = await _marketplaceService.fetchChats(widget.room.taskId);
+      if (!mounted) return;
+      setState(() {
+        _serverMessages = messages.map(_chatMessageFromApi).toList();
+        _loadError = null;
+        _isLoadingMessages = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      if (silent) return;
+      setState(() {
+        _loadError = error.toString();
+        _isLoadingMessages = false;
+      });
+    }
+  }
+
+  Future<void> _sendMessage(ChatPartyRole currentParty) async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
     setState(() {
-      _draftMessages.add(
-        ChatMessage(
-          id: 'draft-${DateTime.now().millisecondsSinceEpoch}',
-          sender: currentParty,
-          type: ChatMessageType.text,
-          content: text,
-          timeLabel: 'Baru saja',
-          status: ChatStatus.sent,
-        ),
-      );
+      _isSending = true;
       _messageController.clear();
     });
+
+    try {
+      await _marketplaceService.sendChat(
+        projectId: widget.room.taskId,
+        content: text,
+      );
+      if (!mounted) return;
+      await _loadMessages(silent: true);
+    } catch (error) {
+      if (!mounted) return;
+      _messageController.text = text;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  ChatMessage _chatMessageFromApi(ChatMessageModel message) {
+    return ChatMessage(
+      id: message.id?.toString() ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
+      sender: message.senderRole == 'client'
+          ? ChatPartyRole.client
+          : ChatPartyRole.freelancer,
+      type: message.messageType == 'negotiation'
+          ? ChatMessageType.negotiation
+          : message.messageType == 'system'
+              ? ChatMessageType.system
+              : ChatMessageType.text,
+      content: message.content ?? '',
+      timeLabel: message.createdAt ?? '',
+      status: ChatStatus.sent,
+    );
   }
 
   void _handleNegotiationAction(String action) {

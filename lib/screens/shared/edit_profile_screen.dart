@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/user_role.dart';
+import '../../services/marketplace_service.dart';
 import '../../widgets/app_ui.dart';
 import '../../widgets/auth_flow_widgets.dart';
 
@@ -26,12 +27,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _bioController = TextEditingController();
   final _primarySkillController = TextEditingController();
   final _portfolioController = TextEditingController();
-  final _bankController = TextEditingController();
-  final _accountController = TextEditingController();
+  final _rateController = TextEditingController();
+  final _experienceController = TextEditingController();
+  final _marketplaceService = MarketplaceService();
 
-  bool _offerNotifications = true;
-  bool _chatNotifications = true;
-  bool _deadlineNotifications = true;
+  bool _isLoadingProfile = true;
+  bool _isSaving = false;
 
   bool get _isClient => widget.userRole == UserRole.client;
 
@@ -39,28 +40,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void initState() {
     super.initState();
     if (_isClient) {
-      _nameController.text = 'PT Maju Bersama';
-      _emailController.text = 'info@majubersama.com';
-      _phoneController.text = '0812 3456 7890';
-      _locationController.text = 'Jakarta, Indonesia';
-      _headlineController.text = 'Teknologi Informasi';
-      _bioController.text =
-          'Membutuhkan bantuan cepat untuk kebutuhan desain, data, dan pengembangan aplikasi.';
+      _headlineController.text = 'Umum';
     } else {
-      _nameController.text = 'Ahmad Rizki';
-      _emailController.text = 'ahmad.rizki@email.com';
-      _phoneController.text = '0813 4567 8901';
-      _locationController.text = 'Bandung, Indonesia';
-      _headlineController.text = 'Full Stack Developer';
-      _bioController.text =
-          'Freelancer Flutter dan Laravel dengan pengalaman membangun app, dashboard, dan payment flow.';
-      _primarySkillController.text =
-          'Flutter & Dart, Laravel & PHP, UI/UX Design, API Integration';
-      _portfolioController.text =
-          'E-Commerce App, Company Profile Website, Mobile Banking UI/UX';
-      _bankController.text = 'Bank BCA';
-      _accountController.text = '9876543210';
+      _headlineController.text = 'Umum';
+      _primarySkillController.text = 'Umum';
+      _rateController.text = '0';
+      _experienceController.text = '0';
     }
+    _loadProfile();
   }
 
   @override
@@ -73,8 +60,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _bioController.dispose();
     _primarySkillController.dispose();
     _portfolioController.dispose();
-    _bankController.dispose();
-    _accountController.dispose();
+    _rateController.dispose();
+    _experienceController.dispose();
     super.dispose();
   }
 
@@ -86,234 +73,200 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         title:
             Text(_isClient ? 'Edit Profil Client' : 'Edit Profil Freelancer'),
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: AppUi.pagePadding,
-          children: [
-            _EditProfileHero(isClient: _isClient),
-            const SizedBox(height: 16),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      body: _isLoadingProfile
+          ? const Center(child: CircularProgressIndicator())
+          : Form(
+              key: _formKey,
+              child: ListView(
+                padding: AppUi.pagePadding,
                 children: [
-                  _SectionLabel(
-                    title: _isClient ? 'Informasi Client' : 'Informasi Publik',
-                    subtitle: _isClient
-                        ? 'Data ini membantu freelancer memahami kebutuhanmu.'
-                        : 'Data ini muncul saat client melihat profilmu.',
+                  _EditProfileHero(isClient: _isClient),
+                  const SizedBox(height: 16),
+                  AppCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _SectionLabel(
+                          title: _isClient
+                              ? 'Informasi Client'
+                              : 'Informasi Publik',
+                          subtitle: _isClient
+                              ? 'Data ini membantu freelancer memahami kebutuhanmu.'
+                              : 'Data ini muncul saat client melihat profilmu.',
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            labelText:
+                                _isClient ? 'Nama perusahaan/client' : 'Nama',
+                            prefixIcon:
+                                const Icon(Icons.person_outline_rounded),
+                          ),
+                          validator: _requiredValidator,
+                        ),
+                        if (_isClient) ...[
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _headlineController,
+                            decoration: const InputDecoration(
+                              labelText: 'Bidang usaha',
+                              prefixIcon: Icon(Icons.business_center_outlined),
+                            ),
+                            validator: _requiredValidator,
+                          ),
+                        ],
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _bioController,
+                          minLines: 3,
+                          maxLines: 5,
+                          decoration: const InputDecoration(
+                            labelText: 'Bio singkat',
+                            prefixIcon: Icon(Icons.notes_outlined),
+                            alignLabelWithHint: true,
+                          ),
+                          validator: _requiredValidator,
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: _isClient ? 'Nama perusahaan/client' : 'Nama',
-                      prefixIcon: const Icon(Icons.person_outline_rounded),
+                  AppCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _SectionLabel(
+                          title: 'Kontak',
+                          subtitle:
+                              'Dipakai untuk verifikasi dan komunikasi akun.',
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          readOnly: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Email login',
+                            prefixIcon: Icon(Icons.email_outlined),
+                            helperText:
+                                'Email mengikuti akun login dan tidak diedit dari profil.',
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            labelText: 'Nomor HP',
+                            prefixIcon: Icon(Icons.phone_iphone_rounded),
+                          ),
+                          validator: _requiredValidator,
+                        ),
+                        if (_isClient) ...[
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _locationController,
+                            decoration: const InputDecoration(
+                              labelText: 'Alamat/Lokasi',
+                              prefixIcon: Icon(Icons.location_on_outlined),
+                            ),
+                            validator: _requiredValidator,
+                          ),
+                        ],
+                      ],
                     ),
-                    validator: _requiredValidator,
                   ),
-                  const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _headlineController,
-                    decoration: InputDecoration(
-                      labelText: _isClient ? 'Bidang' : 'Headline profesi',
-                      prefixIcon: const Icon(Icons.business_center_outlined),
-                    ),
-                    validator: _requiredValidator,
-                  ),
-                  const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _bioController,
-                    minLines: 3,
-                    maxLines: 5,
-                    decoration: const InputDecoration(
-                      labelText: 'Bio singkat',
-                      prefixIcon: Icon(Icons.notes_outlined),
-                      alignLabelWithHint: true,
-                    ),
-                    validator: _requiredValidator,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _SectionLabel(
-                    title: 'Kontak',
-                    subtitle: 'Dipakai untuk verifikasi dan komunikasi akun.',
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email_outlined),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Email wajib diisi';
-                      }
-                      if (!value.contains('@')) return 'Email belum valid';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Nomor HP',
-                      prefixIcon: Icon(Icons.phone_iphone_rounded),
-                    ),
-                    validator: _requiredValidator,
-                  ),
-                  const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _locationController,
-                    decoration: const InputDecoration(
-                      labelText: 'Lokasi',
-                      prefixIcon: Icon(Icons.location_on_outlined),
-                    ),
-                    validator: _requiredValidator,
-                  ),
-                ],
-              ),
-            ),
-            if (!_isClient) ...[
-              const SizedBox(height: 16),
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _SectionLabel(
-                      title: 'Skill & Portfolio',
-                      subtitle: 'Pisahkan beberapa item dengan koma.',
-                    ),
+                  if (!_isClient) ...[
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _primarySkillController,
-                      minLines: 2,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Skill utama',
-                        prefixIcon: Icon(Icons.workspace_premium_outlined),
-                        alignLabelWithHint: true,
+                    AppCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _SectionLabel(
+                            title: 'Skill & Portfolio',
+                            subtitle: 'Pisahkan beberapa item dengan koma.',
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _primarySkillController,
+                            minLines: 2,
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              labelText: 'Skill utama',
+                              prefixIcon:
+                                  Icon(Icons.workspace_premium_outlined),
+                              alignLabelWithHint: true,
+                            ),
+                            validator: _requiredValidator,
+                          ),
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _portfolioController,
+                            minLines: 2,
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              labelText: 'Portfolio pilihan',
+                              prefixIcon: Icon(Icons.folder_copy_outlined),
+                              alignLabelWithHint: true,
+                            ),
+                            validator: _requiredValidator,
+                          ),
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _rateController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Harga per hari',
+                              prefixIcon: Icon(Icons.payments_outlined),
+                              prefixText: 'Rp ',
+                            ),
+                            validator: (value) {
+                              final parsed = _parseInt(value);
+                              if (parsed == null || parsed < 0) {
+                                return 'Harga per hari wajib berupa angka';
+                              }
+                              if (parsed > 99999999) {
+                                return 'Maksimal Rp99.999.999';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _experienceController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Pengalaman tahun',
+                              prefixIcon: Icon(Icons.timeline_outlined),
+                            ),
+                            validator: (value) {
+                              final parsed = _parseInt(value);
+                              if (parsed == null || parsed < 0) {
+                                return 'Pengalaman wajib berupa angka';
+                              }
+                              if (parsed > 80) {
+                                return 'Pengalaman maksimal 80 tahun';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
                       ),
-                      validator: _requiredValidator,
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _portfolioController,
-                      minLines: 2,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Portfolio pilihan',
-                        prefixIcon: Icon(Icons.folder_copy_outlined),
-                        alignLabelWithHint: true,
-                      ),
-                      validator: _requiredValidator,
                     ),
                   ],
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            if (_isClient)
-              const AppCard(
-                child: _SectionLabel(
-                  title: 'Pembayaran',
-                  subtitle:
-                      'Client tidak perlu menyimpan rekening. Semua pembayaran dilakukan lewat Midtrans Snap dengan platform fee 5%.',
-                ),
-              )
-            else
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _SectionLabel(
-                      title: 'Pencairan Dana',
-                      subtitle: 'Rekening tujuan pencairan saldo freelancer.',
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: _isSaving ? null : _saveProfile,
+                    icon: const Icon(Icons.save_outlined, size: 18),
+                    label: Text(_isSaving ? 'Menyimpan...' : 'Simpan Profil'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _bankController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nama bank',
-                        prefixIcon: Icon(Icons.account_balance_outlined),
-                      ),
-                      validator: _requiredValidator,
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _accountController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Nomor rekening',
-                        prefixIcon: Icon(Icons.credit_card_rounded),
-                      ),
-                      validator: _requiredValidator,
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 16),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _SectionLabel(
-                    title: 'Preferensi Notifikasi',
-                    subtitle: 'Atur update penting yang ingin diterima.',
-                  ),
-                  const SizedBox(height: 8),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _offerNotifications,
-                    onChanged: (value) {
-                      setState(() => _offerNotifications = value);
-                    },
-                    title:
-                        Text(_isClient ? 'Penawaran baru' : 'Update penawaran'),
-                    subtitle: const Text('Status offer dan negosiasi.'),
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _chatNotifications,
-                    onChanged: (value) {
-                      setState(() => _chatNotifications = value);
-                    },
-                    title: const Text('Chat'),
-                    subtitle: const Text('Pesan baru dari client/freelancer.'),
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _deadlineNotifications,
-                    onChanged: (value) {
-                      setState(() => _deadlineNotifications = value);
-                    },
-                    title: const Text('Deadline & pembayaran'),
-                    subtitle: const Text('Reminder tugas dan status payment.'),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: _saveProfile,
-              icon: const Icon(Icons.save_outlined, size: 18),
-              label: const Text('Simpan Profil'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -324,15 +277,101 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return null;
   }
 
-  void _saveProfile() {
+  Future<void> _loadProfile() async {
+    try {
+      final profile = await _marketplaceService.fetchProfile();
+      if (!mounted) return;
+      final client = profile['client'] is Map
+          ? Map<String, dynamic>.from(profile['client'] as Map)
+          : <String, dynamic>{};
+      final freelancer = profile['freelancer'] is Map
+          ? Map<String, dynamic>.from(profile['freelancer'] as Map)
+          : <String, dynamic>{};
+
+      setState(() {
+        _nameController.text = profile['name']?.toString() ??
+            client['nama_perusahaan']?.toString() ??
+            freelancer['nama_lengkap']?.toString() ??
+            _nameController.text;
+        _emailController.text =
+            profile['email']?.toString() ?? _emailController.text;
+        _phoneController.text = profile['phone']?.toString() ??
+            client['no_telepon']?.toString() ??
+            freelancer['no_telepon']?.toString() ??
+            _phoneController.text;
+        _locationController.text = _isClient
+            ? (client['alamat']?.toString() ?? _locationController.text)
+            : _locationController.text;
+        _headlineController.text = _isClient
+            ? (profile['company']?.toString() ??
+                client['bidang_usaha']?.toString() ??
+                _headlineController.text)
+            : (profile['skill']?.toString() ??
+                freelancer['keahlian']?.toString() ??
+                _headlineController.text);
+        _bioController.text = profile['bio']?.toString() ??
+            freelancer['deskripsi']?.toString() ??
+            _bioController.text;
+        _primarySkillController.text = profile['skill']?.toString() ??
+            freelancer['keahlian']?.toString() ??
+            _primarySkillController.text;
+        _portfolioController.text =
+            freelancer['portfolio']?.toString() ?? _portfolioController.text;
+        _rateController.text =
+            _numberText(freelancer['harga_per_hari'], _rateController.text);
+        _experienceController.text =
+            freelancer['pengalaman_tahun']?.toString() ??
+                _experienceController.text;
+        _isLoadingProfile = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoadingProfile = false);
+    }
+  }
+
+  Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Profil tersimpan. Nanti data ini dikirim ke Laravel.'),
-      ),
-    );
-    Navigator.pop(context);
+    setState(() => _isSaving = true);
+    try {
+      await _marketplaceService.updateProfile(
+        name: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        bio: _bioController.text.trim(),
+        skill: _isClient ? null : _primarySkillController.text.trim(),
+        company: _isClient ? _headlineController.text.trim() : null,
+        alamat: _isClient ? _locationController.text.trim() : null,
+        portfolio: _isClient ? null : _portfolioController.text.trim(),
+        hargaPerHari: _isClient ? null : _parseInt(_rateController.text),
+        pengalamanTahun:
+            _isClient ? null : _parseInt(_experienceController.text),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profil berhasil disimpan ke Laravel.')),
+      );
+      Navigator.pop(context);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  int? _parseInt(String? value) {
+    if (value == null) return null;
+    return int.tryParse(value.replaceAll(RegExp(r'[^0-9]'), ''));
+  }
+
+  String _numberText(dynamic value, String fallback) {
+    if (value == null) return fallback;
+    final parsed = double.tryParse(value.toString());
+    if (parsed == null) return fallback;
+    return parsed.round().toString();
   }
 }
 

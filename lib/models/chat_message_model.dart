@@ -22,15 +22,25 @@ class ChatMessageModel {
   });
 
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
+    final rawMetadata = json['metadata'];
+
     return ChatMessageModel(
       id: json['id'] != null ? int.tryParse(json['id'].toString()) : null,
-      projectId: json['project_id'] != null ? int.tryParse(json['project_id'].toString()) : null,
-      senderId: json['sender_id'] != null ? int.tryParse(json['sender_id'].toString()) : null,
+      projectId: json['project_id'] != null
+          ? int.tryParse(json['project_id'].toString())
+          : null,
+      senderId: json['sender_id'] != null
+          ? int.tryParse(json['sender_id'].toString())
+          : null,
       senderName: json['sender_name'] as String?,
       senderRole: json['sender_role'] as String?,
       messageType: json['message_type'] as String?,
       content: json['content'] as String?,
-      metadata: json['metadata'] != null ? Map<String, dynamic>.from(json['metadata']) : null,
+      metadata: rawMetadata is Map
+          ? Map<String, dynamic>.from(rawMetadata)
+          : rawMetadata is List && rawMetadata.isEmpty
+              ? <String, dynamic>{}
+              : null,
       createdAt: json['created_at'] as String?,
     );
   }

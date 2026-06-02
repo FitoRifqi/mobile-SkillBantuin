@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../models/offer_model.dart';
 import '../../models/task_models.dart';
 import '../../models/user_role.dart';
-import '../../services/mock_task_service.dart';
+import '../../services/marketplace_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/app_ui.dart';
 import '../../widgets/auth_flow_widgets.dart';
@@ -18,7 +19,15 @@ class FreelancerProjectsScreen extends StatefulWidget {
 }
 
 class _FreelancerProjectsScreenState extends State<FreelancerProjectsScreen> {
+  final _marketplaceService = MarketplaceService();
   final _searchController = TextEditingController();
+  late Future<List<OfferModel>> _offersFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _offersFuture = _marketplaceService.fetchMyOffers();
+  }
 
   @override
   void dispose() {
@@ -28,18 +37,7 @@ class _FreelancerProjectsScreenState extends State<FreelancerProjectsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final applications = MockTaskService().getFreelancerApplications();
     final query = _searchController.text.trim().toLowerCase();
-    final filteredApplications = applications.where((item) {
-      if (query.isEmpty) return true;
-
-      return item.taskTitle.toLowerCase().contains(query) ||
-          item.category.toLowerCase().contains(query) ||
-          item.note.toLowerCase().contains(query) ||
-          item.proposedDeadline.toLowerCase().contains(query) ||
-          item.updatedAtLabel.toLowerCase().contains(query) ||
-          offerStatusLabel(item.status).toLowerCase().contains(query);
-    }).toList();
 
     return Scaffold(
       backgroundColor: AppUi.pageBackground,
@@ -83,27 +81,78 @@ class _FreelancerProjectsScreenState extends State<FreelancerProjectsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          if (filteredApplications.isEmpty)
-            const AppEmptyState(
-              icon: Icons.inbox_outlined,
-              title: 'Penawaran tidak ditemukan',
-              message: 'Coba ubah kata kunci pencarian.',
-            )
-          else
-            ...filteredApplications.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _ApplicationCard(item: item),
-              ),
-            ),
+          FutureBuilder<List<OfferModel>>(
+            future: _offersFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return AppCard(
+                  child: Text(
+                    snapshot.error.toString(),
+                    style: const TextStyle(
+                      color: AuthFlowPalette.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                );
+              }
+
+              final offers = (snapshot.data ?? const <OfferModel>[])
+                  .where((item) => _matchesQuery(item, query))
+                  .toList();
+
+              if (offers.isEmpty) {
+                return const AppEmptyState(
+                  icon: Icons.inbox_outlined,
+                  title: 'Penawaran tidak ditemukan',
+                  message: 'Coba ubah kata kunci pencarian.',
+                );
+              }
+
+              return Column(
+                children: offers
+                    .map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _ApplicationCard(item: item),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+          ),
         ],
       ),
     );
   }
+
+  bool _matchesQuery(OfferModel item, String query) {
+    if (query.isEmpty) return true;
+    final status = _offerStatusFromString(item.status);
+    final values = [
+      item.project?.judul,
+      item.project?.kategori?.namaKategori,
+      item.message,
+      item.status,
+      offerStatusLabel(status),
+      item.proposedDeadlineDays != null
+          ? '${item.proposedDeadlineDays} hari'
+          : null,
+    ].whereType<String>().map((value) => value.toLowerCase());
+    return values.any((value) => value.contains(query));
+  }
 }
 
 class _ApplicationCard extends StatelessWidget {
-  final FreelancerApplication item;
+  final OfferModel item;
 
   const _ApplicationCard({required this.item});
 
@@ -122,7 +171,7 @@ class _ApplicationCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item.taskTitle,
+                      item.project?.judul ?? 'Tugas #${item.projectId ?? '-'}',
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
@@ -131,7 +180,7 @@ class _ApplicationCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      item.category,
+                      item.project?.kategori?.namaKategori ?? 'Kategori lain',
                       style: const TextStyle(
                         color: Color(0xFF64748B),
                         fontWeight: FontWeight.w600,
@@ -142,8 +191,8 @@ class _ApplicationCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               StatusBadge(
-                label: offerStatusLabel(item.status),
-                color: offerStatusColor(item.status),
+                label: offerStatusLabel(_offerStatusFromString(item.status)),
+                color: offerStatusColor(_offerStatusFromString(item.status)),
               ),
             ],
           ),
@@ -154,21 +203,23 @@ class _ApplicationCard extends StatelessWidget {
             children: [
               _MiniChip(
                 icon: Icons.payments_outlined,
-                label: formatRupiah(item.offeredBudget),
+                label: formatRupiah(item.offeredBudget ?? 0),
               ),
               _MiniChip(
                 icon: Icons.schedule_outlined,
-                label: item.proposedDeadline,
+                label: item.proposedDeadlineDays != null
+                    ? '${item.proposedDeadlineDays} hari'
+                    : 'Deadline belum tersedia',
               ),
               _MiniChip(
                 icon: Icons.update_rounded,
-                label: item.updatedAtLabel,
+                label: item.createdAt ?? 'Baru saja',
               ),
             ],
           ),
           const SizedBox(height: 14),
           Text(
-            item.note,
+            item.message ?? '-',
             style: const TextStyle(
               color: Color(0xFF475569),
               height: 1.5,
@@ -177,6 +228,20 @@ class _ApplicationCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+OfferStatus _offerStatusFromString(String? status) {
+  switch (status) {
+    case 'accepted':
+      return OfferStatus.accepted;
+    case 'rejected':
+      return OfferStatus.rejected;
+    case 'countered':
+      return OfferStatus.countered;
+    case 'pending':
+    default:
+      return OfferStatus.pending;
   }
 }
 

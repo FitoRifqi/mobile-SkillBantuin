@@ -7,6 +7,7 @@ import '../models/app_user.dart';
 class SessionService {
   static const String _sessionKey = 'skillbantuin_session';
   static const String _onboardingKey = 'skillbantuin_onboarding_seen';
+  static AppUser? _currentSession;
 
   SessionService({SharedPreferences? sharedPreferences})
       : _sharedPreferences = sharedPreferences;
@@ -18,25 +19,34 @@ class SessionService {
   }
 
   Future<void> saveSession(AppUser user) async {
+    _currentSession = user;
     final prefs = await _prefs;
     await prefs.setString(_sessionKey, jsonEncode(user.toJson()));
   }
 
+  Future<void> setCurrentSession(AppUser user) async {
+    _currentSession = user;
+  }
+
   Future<AppUser?> getSession() async {
+    if (_currentSession != null) return _currentSession;
+
     final prefs = await _prefs;
     final rawSession = prefs.getString(_sessionKey);
     if (rawSession == null || rawSession.isEmpty) return null;
 
     try {
-      return AppUser.fromJson(
+      _currentSession = AppUser.fromJson(
         jsonDecode(rawSession) as Map<String, dynamic>,
       );
+      return _currentSession;
     } catch (_) {
       return null;
     }
   }
 
   Future<void> clearSession() async {
+    _currentSession = null;
     final prefs = await _prefs;
     await prefs.remove(_sessionKey);
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/task_models.dart';
+import '../../services/marketplace_service.dart';
 import '../../utils/task_ui_utils.dart';
 
 class FreelancerOfferFormScreen extends StatefulWidget {
@@ -21,6 +22,8 @@ class _FreelancerOfferFormScreenState extends State<FreelancerOfferFormScreen> {
   final _budgetController = TextEditingController();
   final _deadlineController = TextEditingController(text: '2 hari');
   final _messageController = TextEditingController();
+  final _marketplaceService = MarketplaceService();
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -118,6 +121,9 @@ class _FreelancerOfferFormScreenState extends State<FreelancerOfferFormScreen> {
                       if (value == null || value.trim().isEmpty) {
                         return 'Harga penawaran wajib diisi';
                       }
+                      if (int.tryParse(value.trim()) == null) {
+                        return 'Harga penawaran harus berupa angka';
+                      }
                       return null;
                     },
                   ),
@@ -157,9 +163,10 @@ class _FreelancerOfferFormScreenState extends State<FreelancerOfferFormScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: _submitOffer,
+                      onPressed: _isSubmitting ? null : _submitOffer,
                       icon: const Icon(Icons.send_rounded, size: 18),
-                      label: const Text('Kirim Penawaran'),
+                      label: Text(
+                          _isSubmitting ? 'Mengirim...' : 'Kirim Penawaran'),
                     ),
                   ),
                 ],
@@ -171,14 +178,37 @@ class _FreelancerOfferFormScreenState extends State<FreelancerOfferFormScreen> {
     );
   }
 
-  void _submitOffer() {
+  Future<void> _submitOffer() async {
     if (!_formKey.currentState!.validate()) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Penawaran dikirim. Cek tab Penawaran.'),
-      ),
-    );
-    Navigator.pop(context);
+    setState(() => _isSubmitting = true);
+    try {
+      await _marketplaceService.applyToProject(
+        projectId: widget.task.id,
+        offeredBudget: int.parse(_budgetController.text.trim()),
+        message: _messageController.text.trim(),
+        proposedDeadlineDays: _parseDeadlineDays(_deadlineController.text),
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Penawaran berhasil dikirim ke Laravel.'),
+        ),
+      );
+      Navigator.pop(context, true);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  int _parseDeadlineDays(String raw) {
+    final match = RegExp(r'\d+').firstMatch(raw);
+    return int.tryParse(match?.group(0) ?? '') ?? 1;
   }
 }

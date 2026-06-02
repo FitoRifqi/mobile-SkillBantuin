@@ -40,14 +40,17 @@ class TaskService {
 
   List<Map<String, dynamic>> _extractList(dynamic raw,
       {List<String> keys = const ['data', 'items', 'tasks', 'results']}) {
-    if (raw is List) {
-      return raw.cast<Map<String, dynamic>>();
-    }
+    final laravelList = LaravelResponse.extractList(raw);
+    if (laravelList.isNotEmpty) return laravelList;
 
-    if (raw is Map<String, dynamic>) {
+    if (raw is Map) {
+      final map = Map<String, dynamic>.from(raw);
       for (final key in keys) {
-        if (raw[key] is List) {
-          return (raw[key] as List).cast<Map<String, dynamic>>();
+        if (map[key] is List) {
+          return (map[key] as List)
+              .whereType<Map>()
+              .map(Map<String, dynamic>.from)
+              .toList();
         }
       }
     }
@@ -59,10 +62,17 @@ class TaskService {
     try {
       final token = await _getToken();
       final raw = await _tryGet(
-        ['/client/tasks', '/tasks/client', '/tasks', '/client/activities'],
+        [
+          '/my-projects',
+          '/client/tasks',
+          '/tasks/client',
+          '/tasks',
+          '/client/activities'
+        ],
         token: token,
       );
-      final list = _extractList(raw, keys: ['data', 'tasks', 'clientTasks', 'items']);
+      final list =
+          _extractList(raw, keys: ['data', 'tasks', 'clientTasks', 'items']);
       if (list.isEmpty) return _mockTaskService.getClientTasks();
       return list.map(ClientTask.fromJson).toList();
     } catch (_) {
@@ -74,10 +84,16 @@ class TaskService {
     try {
       final token = await _getToken();
       final raw = await _tryGet(
-        ['/freelancer/tasks', '/tasks/available', '/tasks', '/available-tasks'],
+        [
+          '/projects?status=open',
+          '/projects',
+          '/freelancer/tasks',
+          '/tasks/available'
+        ],
         token: token,
       );
-      final list = _extractList(raw, keys: ['data', 'tasks', 'availableTasks', 'items']);
+      final list =
+          _extractList(raw, keys: ['data', 'tasks', 'availableTasks', 'items']);
       if (list.isEmpty) return _mockTaskService.getAvailableTasks();
       return list.map(AvailableTask.fromJson).toList();
     } catch (_) {
@@ -89,7 +105,7 @@ class TaskService {
     try {
       final token = await _getToken();
       final raw = await _tryGet(
-        ['/freelancer/works', '/works', '/tasks/assigned', '/freelancer/assignments'],
+        ['/my-offers', '/freelancer/works', '/works', '/tasks/assigned'],
         token: token,
       );
       final list = _extractList(raw, keys: ['data', 'works', 'items']);
@@ -104,7 +120,7 @@ class TaskService {
     try {
       final token = await _getToken();
       final raw = await _tryGet(
-        ['/freelancer/earnings', '/earnings', '/transactions', '/financials'],
+        ['/transactions', '/freelancer/earnings', '/earnings', '/financials'],
         token: token,
       );
       final list = _extractList(raw, keys: ['data', 'earnings', 'items']);

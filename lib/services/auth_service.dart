@@ -27,14 +27,15 @@ class AuthService {
       },
     );
 
-    final data = Map<String, dynamic>.from(response['user'] as Map<String, dynamic>);
+    final data =
+        Map<String, dynamic>.from(response['user'] as Map<String, dynamic>);
     data['token'] = response['token'];
     final user = AppUser.fromJson(data);
 
     if (rememberMe) {
       await _sessionService.saveSession(user);
     } else {
-      await _sessionService.clearSession();
+      await _sessionService.setCurrentSession(user);
     }
 
     return user;
@@ -61,14 +62,15 @@ class AuthService {
       },
     );
 
-    final data = Map<String, dynamic>.from(response['user'] as Map<String, dynamic>);
+    final data =
+        Map<String, dynamic>.from(response['user'] as Map<String, dynamic>);
     data['token'] = response['token'];
     final user = AppUser.fromJson(data);
 
     if (keepSignedIn) {
       await _sessionService.saveSession(user);
     } else {
-      await _sessionService.clearSession();
+      await _sessionService.setCurrentSession(user);
     }
 
     return user;

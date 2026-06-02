@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../models/chat_models.dart';
 import '../../models/task_models.dart';
 import '../../models/user_role.dart';
 import '../../models/workflow_results.dart';
-import '../../services/mock_chat_service.dart';
+import '../../services/marketplace_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/status_badge.dart';
 import '../client/client_payment_screen.dart';
 import '../shared/chat_room_screen.dart';
 
-class ClientOffersScreen extends StatelessWidget {
+class ClientOffersScreen extends StatefulWidget {
   final ClientTask task;
 
   const ClientOffersScreen({
@@ -18,31 +19,76 @@ class ClientOffersScreen extends StatelessWidget {
   });
 
   @override
+  State<ClientOffersScreen> createState() => _ClientOffersScreenState();
+}
+
+class _ClientOffersScreenState extends State<ClientOffersScreen> {
+  final _marketplaceService = MarketplaceService();
+  late Future<List<VolunteerOffer>> _offersFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _offersFuture = _loadOffers();
+  }
+
+  Future<List<VolunteerOffer>> _loadOffers() async {
+    final offers =
+        await _marketplaceService.fetchProjectVolunteerOffers(widget.task.id);
+    return offers.isEmpty ? widget.task.offers : offers;
+  }
+
+  void _refreshOffers() {
+    setState(() {
+      _offersFuture = _loadOffers();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Daftar Penawaran'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _TaskSummaryCard(task: task),
-          const SizedBox(height: 16),
-          ...task.offers.map(
-            (offer) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _OfferCard(
-                task: task,
-                offer: offer,
+      body: FutureBuilder<List<VolunteerOffer>>(
+        future: _offersFuture,
+        builder: (context, snapshot) {
+          final offers = snapshot.data ?? widget.task.offers;
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _TaskSummaryCard(task: widget.task),
+              const SizedBox(height: 16),
+              if (snapshot.connectionState == ConnectionState.waiting)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (snapshot.hasError)
+                _InfoPanel(
+                  title: 'Gagal memuat penawaran',
+                  subtitle: snapshot.error.toString(),
+                ),
+              ...offers.map(
+                (offer) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _OfferCard(
+                    task: widget.task,
+                    offer: offer,
+                    onChanged: _refreshOffers,
+                  ),
+                ),
               ),
-            ),
-          ),
-          if (task.offers.isEmpty)
-            const _InfoPanel(
-              title: 'Belum ada penawaran',
-              subtitle: 'Penawaran freelancer akan muncul di sini.',
-            ),
-        ],
+              if (!snapshot.hasError && offers.isEmpty)
+                const _InfoPanel(
+                  title: 'Belum ada penawaran',
+                  subtitle: 'Penawaran freelancer akan muncul di sini.',
+                ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -107,10 +153,13 @@ class _TaskSummaryCard extends StatelessWidget {
 class _OfferCard extends StatelessWidget {
   final ClientTask task;
   final VolunteerOffer offer;
+  final VoidCallback onChanged;
+  final MarketplaceService _marketplaceService = MarketplaceService();
 
-  const _OfferCard({
+  _OfferCard({
     required this.task,
     required this.offer,
+    required this.onChanged,
   });
 
   @override
@@ -210,17 +259,23 @@ class _OfferCard extends StatelessWidget {
             children: [
               OutlinedButton.icon(
                 onPressed: () {
-                  final rooms = MockChatService().getClientRooms();
-                  final matchedRooms =
-                      rooms.where((item) => item.taskId == task.id).toList();
-                  final room = matchedRooms.isNotEmpty
-                      ? matchedRooms.first
-                      : rooms.first;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => ChatRoomScreen(
-                        room: room,
+                        room: ChatRoom(
+                          id: 'project-${task.id}',
+                          taskId: task.id,
+                          taskTitle: task.title,
+                          counterpartName: offer.freelancerName,
+                          counterpartRoleLabel: 'Freelancer',
+                          counterpartOnline: false,
+                          lastMessage: offer.message,
+                          lastMessageTime: offer.proposedDeadline,
+                          unreadCount: 0,
+                          taskStatus: task.status,
+                          messages: const [],
+                        ),
                         currentRole: UserRole.client,
                       ),
                     ),
@@ -233,6 +288,16 @@ class _OfferCard extends StatelessWidget {
                 onPressed: offer.status == OfferStatus.rejected
                     ? null
                     : () async {
+                        final canContinue =
+                            offer.status == OfferStatus.accepted ||
+                                await _runOfferAction(
+                                  context,
+                                  () =>
+                                      _marketplaceService.acceptOffer(offer.id),
+                                  'Penawaran ${offer.freelancerName} diterima.',
+                                );
+                        if (!canContinue) return;
+                        if (!context.mounted) return;
                         final result =
                             await Navigator.push<PaymentSubmissionResult>(
                           context,
@@ -257,17 +322,19 @@ class _OfferCard extends StatelessWidget {
                 label: const Text('Terima & Bayar'),
               ),
               OutlinedButton(
-                onPressed: () => _showMessage(
+                onPressed: () => _runOfferAction(
                   context,
+                  () => _marketplaceService.rejectOffer(offer.id),
                   'Penawaran ${offer.freelancerName} ditolak.',
                 ),
                 child: const Text('Tolak'),
               ),
               TextButton(
-                onPressed: () => _showMessage(
-                  context,
-                  'Tawar balik lewat chat.',
-                ),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Tawar balik lewat chat.')),
+                  );
+                },
                 child: const Text('Tawar Balik'),
               ),
             ],
@@ -277,10 +344,26 @@ class _OfferCard extends StatelessWidget {
     );
   }
 
-  void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+  Future<bool> _runOfferAction(
+    BuildContext context,
+    Future<void> Function() action,
+    String message,
+  ) async {
+    try {
+      await action();
+      if (!context.mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      onChanged();
+      return true;
+    } catch (error) {
+      if (!context.mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+      return false;
+    }
   }
 }
 

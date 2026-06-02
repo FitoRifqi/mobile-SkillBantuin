@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/project_model.dart';
+import '../../models/task_models.dart';
 import '../../providers/project_provider.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/status_badge.dart';
+import 'freelancer_task_detail_screen.dart';
 
 class FreelancerSearchScreen extends StatefulWidget {
   const FreelancerSearchScreen({super.key});
@@ -97,25 +99,21 @@ class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
                   );
                 }
 
-                final filteredProjects = projectProvider.projects
-                    .where((project) {
-                      final matchesSearch =
-                          _searchController.text.trim().isEmpty ||
-                              (project.judul
-                                      ?.toLowerCase()
-                                      .contains(
-                                          _searchController.text.toLowerCase()) ??
-                                  false) ||
-                              (project.kategori?.namaKategori
-                                      ?.toLowerCase()
-                                      .contains(
-                                          _searchController.text.toLowerCase()) ??
-                                  false);
-                      final matchesCategory = _selectedCategory == null ||
-                          project.kategori?.namaKategori == _selectedCategory;
-                      return matchesSearch && matchesCategory;
-                    })
-                    .toList();
+                final filteredProjects =
+                    projectProvider.projects.where((project) {
+                  final matchesSearch = _searchController.text.trim().isEmpty ||
+                      (project.judul
+                              ?.toLowerCase()
+                              .contains(_searchController.text.toLowerCase()) ??
+                          false) ||
+                      (project.kategori?.namaKategori
+                              ?.toLowerCase()
+                              .contains(_searchController.text.toLowerCase()) ??
+                          false);
+                  final matchesCategory = _selectedCategory == null ||
+                      project.kategori?.namaKategori == _selectedCategory;
+                  return matchesSearch && matchesCategory;
+                }).toList();
 
                 if (filteredProjects.isEmpty) {
                   return Center(
@@ -311,9 +309,12 @@ class _ProjectCard extends StatelessWidget {
               const SizedBox(width: 12),
               ElevatedButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Detail proyek: ${project.judul}'),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FreelancerTaskDetailScreen(
+                        task: _projectToAvailableTask(project),
+                      ),
                     ),
                   );
                 },
@@ -323,6 +324,30 @@ class _ProjectCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  AvailableTask _projectToAvailableTask(ProjectModel project) {
+    final minBudget = project.anggaranMin ?? 0;
+    final maxBudget = project.anggaranMax ?? minBudget;
+    return AvailableTask(
+      id: project.id?.toString() ?? '',
+      title: project.judul ?? 'Untitled',
+      category: project.kategori?.namaKategori ?? 'Umum',
+      description: project.deskripsi ?? '',
+      initialBudget: maxBudget,
+      deadlineLabel: project.deadline != null
+          ? '${project.deadline!.difference(DateTime.now()).inDays} hari'
+          : 'TBD',
+      assistanceType: AssistanceType.online,
+      clientName: project.client?.namaKontak ??
+          project.client?.namaPerusahaan ??
+          'Client',
+      postedLabel: 'Terbaru',
+      applicantsCount: project.offers?.length ?? project.bids?.length ?? 0,
+      budgetRangeLabel:
+          '${formatRupiah(minBudget)} - ${formatRupiah(maxBudget)}',
+      location: project.client?.alamat ?? 'Online',
     );
   }
 }

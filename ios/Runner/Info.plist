@@ -24,6 +24,10 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>SkillBantuin memakai mikrofon untuk mengubah suara menjadi teks chat.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>SkillBantuin memakai pengenalan suara untuk membantu menulis pesan chat.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

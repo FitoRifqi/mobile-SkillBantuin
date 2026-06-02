@@ -4,6 +4,7 @@ import 'project_model.dart';
 class OfferModel {
   final int? id;
   final int? projectId;
+  final String? projectTitle;
   final int? freelancerId;
   final FreelancerModel? freelancer;
   final ProjectModel? project;
@@ -16,6 +17,7 @@ class OfferModel {
   OfferModel({
     this.id,
     this.projectId,
+    this.projectTitle,
     this.freelancerId,
     this.freelancer,
     this.project,
@@ -32,6 +34,7 @@ class OfferModel {
       projectId: json['project_id'] != null
           ? int.tryParse(json['project_id'].toString())
           : null,
+      projectTitle: json['project_title'] as String?,
       freelancerId: json['freelancer_id'] != null
           ? int.tryParse(json['freelancer_id'].toString())
           : null,
@@ -58,6 +61,7 @@ class OfferModel {
     return {
       'id': id,
       'project_id': projectId,
+      'project_title': projectTitle,
       'freelancer_id': freelancerId,
       'freelancer': freelancer?.toJson(),
       'project': project?.toJson(),

@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../models/chat_models.dart';
 import '../../models/chat_message_model.dart';
@@ -26,10 +28,13 @@ class ChatRoomScreen extends StatefulWidget {
 class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final _messageController = TextEditingController();
   final _marketplaceService = MarketplaceService();
+  final SpeechToText _speechToText = SpeechToText();
   final List<ChatMessage> _draftMessages = [];
   List<ChatMessage> _serverMessages = [];
   bool _isLoadingMessages = true;
   bool _isSending = false;
+  bool _isSpeechReady = false;
+  bool _isListening = false;
   String? _loadError;
   Timer? _refreshTimer;
 
@@ -44,6 +49,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   void initState() {
     super.initState();
     _loadMessages();
+    _initSpeech();
     _refreshTimer = Timer.periodic(
       const Duration(seconds: 3),
       (_) => _loadMessages(silent: true),
@@ -246,6 +252,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       decoration: const InputDecoration(
                         hintText: 'Tulis pesan...',
                       ),
+                      minLines: 1,
+                      maxLines: 4,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: _isListening
+                        ? const Color(0xFFDC2626)
+                        : const Color(0xFFEFF6FF),
+                    child: IconButton(
+                      tooltip: _isListening
+                          ? 'Berhenti rekam suara'
+                          : 'Voice recognition',
+                      onPressed: _toggleVoiceRecognition,
+                      icon: Icon(
+                        _isListening ? Icons.stop_rounded : Icons.mic_rounded,
+                        color: _isListening
+                            ? Colors.white
+                            : const Color(0xFF2563EB),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -286,6 +313,70 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         _isLoadingMessages = false;
       });
     }
+  }
+
+  Future<void> _initSpeech() async {
+    final available = await _speechToText.initialize(
+      onStatus: (status) {
+        if (!mounted) return;
+        setState(() {
+          _isListening = status == 'listening';
+        });
+      },
+      onError: (error) {
+        if (!mounted) return;
+        setState(() => _isListening = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Voice recognition gagal: ${error.errorMsg}')),
+        );
+      },
+    );
+
+    if (!mounted) return;
+    setState(() => _isSpeechReady = available);
+  }
+
+  Future<void> _toggleVoiceRecognition() async {
+    if (_isListening) {
+      await _speechToText.stop();
+      if (mounted) setState(() => _isListening = false);
+      return;
+    }
+
+    if (!_isSpeechReady) {
+      await _initSpeech();
+    }
+
+    if (!_isSpeechReady) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Voice recognition belum tersedia di device ini.'),
+        ),
+      );
+      return;
+    }
+
+    await _speechToText.listen(
+      onResult: _handleSpeechResult,
+      listenOptions: SpeechListenOptions(
+        localeId: 'id_ID',
+        listenMode: ListenMode.dictation,
+        partialResults: true,
+      ),
+    );
+
+    if (mounted) setState(() => _isListening = true);
+  }
+
+  void _handleSpeechResult(SpeechRecognitionResult result) {
+    final recognizedWords = result.recognizedWords.trim();
+    if (recognizedWords.isEmpty) return;
+
+    _messageController.text = recognizedWords;
+    _messageController.selection = TextSelection.fromPosition(
+      TextPosition(offset: _messageController.text.length),
+    );
   }
 
   Future<void> _sendMessage(ChatPartyRole currentParty) async {

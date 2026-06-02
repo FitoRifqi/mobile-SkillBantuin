@@ -1,19 +1,38 @@
 import 'package:flutter/material.dart';
 
-import '../../models/app_user.dart';
 import '../../models/user_role.dart';
 import '../../services/auth_service.dart';
-import '../../services/session_service.dart';
+import '../../services/marketplace_service.dart';
 import '../../widgets/auth_flow_widgets.dart';
 import '../role_selection_screen.dart';
 import '../shared/edit_profile_screen.dart';
 import '../shared/notification_screen.dart';
 import 'freelancer_earnings_screen.dart';
 
-class FreelancerProfileScreen extends StatelessWidget {
+class FreelancerProfileScreen extends StatefulWidget {
   const FreelancerProfileScreen({super.key});
 
+  @override
+  State<FreelancerProfileScreen> createState() =>
+      _FreelancerProfileScreenState();
+}
+
+class _FreelancerProfileScreenState extends State<FreelancerProfileScreen> {
   static final AuthService _authService = AuthService();
+  final MarketplaceService _marketplaceService = MarketplaceService();
+  late Future<Map<String, dynamic>> _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileFuture = _marketplaceService.fetchProfile();
+  }
+
+  void _refreshProfile() {
+    setState(() {
+      _profileFuture = _marketplaceService.fetchProfile();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,8 +58,8 @@ class FreelancerProfileScreen extends StatelessWidget {
           IconButton(
             tooltip: 'Edit profil',
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => const EditProfileScreen(
@@ -48,123 +67,177 @@ class FreelancerProfileScreen extends StatelessWidget {
                   ),
                 ),
               );
+              if (mounted) _refreshProfile();
             },
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
-        children: [
-          _FreelancerHero(),
-          const SizedBox(height: 16),
-          const _ReadinessCard(),
-          const SizedBox(height: 16),
-          const _FreelancerStats(),
-          const SizedBox(height: 18),
-          const _SectionTitle(
-            title: 'Keahlian Utama',
-            subtitle: 'Skill yang kamu tawarkan.',
-          ),
-          const SizedBox(height: 10),
-          const _SkillPanel(
-            skills: [
-              'Flutter & Dart',
-              'Laravel & PHP',
-              'UI/UX Design',
-              'Database Management',
-              'API Integration',
-              'Responsive Layout',
-            ],
-          ),
-          const SizedBox(height: 18),
-          const _SectionTitle(
-            title: 'Portfolio Pilihan',
-            subtitle: 'Karya terbaikmu.',
-          ),
-          const SizedBox(height: 10),
-          const _InfoPanel(
-            children: [
-              _InfoTile(
-                icon: Icons.phone_android_rounded,
-                title: 'E-Commerce App',
-                subtitle: 'Flutter, payment flow, dan dashboard admin',
-                trailing: Icon(Icons.chevron_right_rounded),
-              ),
-              _InfoTile(
-                icon: Icons.web_asset_rounded,
-                title: 'Company Profile Website',
-                subtitle: 'Landing page responsif untuk UMKM',
-                trailing: Icon(Icons.chevron_right_rounded),
-              ),
-              _InfoTile(
-                icon: Icons.design_services_outlined,
-                title: 'Mobile Banking UI/UX',
-                subtitle: 'Prototype flow transfer dan pembayaran',
-                trailing: Icon(Icons.chevron_right_rounded),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          const _SectionTitle(
-            title: 'Pengaturan Akun',
-            subtitle: 'Verifikasi dan pencairan dana.',
-          ),
-          const SizedBox(height: 10),
-          const _InfoPanel(
-            children: [
-              _InfoTile(
-                icon: Icons.verified_user_outlined,
-                title: 'Verifikasi email',
-                subtitle: 'Sudah aktif',
-                trailing:
-                    Icon(Icons.check_circle_rounded, color: Color(0xFF059669)),
-              ),
-              _InfoTile(
-                icon: Icons.badge_outlined,
-                title: 'Verifikasi KTP',
-                subtitle: 'Siap untuk proyek bernilai tinggi',
-                trailing: Icon(Icons.chevron_right_rounded),
-              ),
-              _InfoTile(
-                icon: Icons.account_balance_wallet_outlined,
-                title: 'Metode penarikan dana',
-                subtitle: 'Bank BCA •••• 7890',
-                trailing: Icon(Icons.chevron_right_rounded),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const FreelancerEarningsScreen(),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _profileFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final profile = snapshot.data ?? const <String, dynamic>{};
+          final freelancer = profile['freelancer'] is Map
+              ? Map<String, dynamic>.from(profile['freelancer'] as Map)
+              : const <String, dynamic>{};
+          final skills = _splitItems(
+            profile['skill']?.toString() ?? freelancer['keahlian']?.toString(),
+            fallback: ['Umum'],
+          );
+          final portfolios = _splitItems(
+            freelancer['portfolio']?.toString(),
+            fallback: ['Portfolio belum diisi'],
+          );
+
+          return RefreshIndicator(
+            onRefresh: () async => _refreshProfile(),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
+              children: [
+                _FreelancerHero(profile: profile),
+                const SizedBox(height: 16),
+                _FreelancerStats(
+                  rating: _text(freelancer['rating'], '0'),
+                  experience:
+                      '${_text(freelancer['pengalaman_tahun'], '0')} th',
+                  rate: _rupiah(freelancer['harga_per_hari']),
                 ),
-              );
-            },
-            icon: const Icon(Icons.savings_rounded),
-            label: const Text('Lihat Pendapatan'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AuthFlowPalette.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
+                const SizedBox(height: 18),
+                const _SectionTitle(
+                  title: 'Keahlian Utama',
+                  subtitle: 'Skill yang kamu tawarkan.',
+                ),
+                const SizedBox(height: 10),
+                _SkillPanel(skills: skills),
+                const SizedBox(height: 18),
+                const _SectionTitle(
+                  title: 'Portfolio Pilihan',
+                  subtitle: 'Data portfolio dari profil Laravel.',
+                ),
+                const SizedBox(height: 10),
+                _InfoPanel(
+                  children: portfolios
+                      .map(
+                        (item) => _InfoTile(
+                          icon: Icons.folder_copy_outlined,
+                          title: item,
+                          subtitle: _text(
+                            profile['bio'],
+                            _text(freelancer['deskripsi'], '-'),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 18),
+                const _SectionTitle(
+                  title: 'Informasi Akun',
+                  subtitle: 'Data yang tersimpan di Laravel.',
+                ),
+                const SizedBox(height: 10),
+                _InfoPanel(
+                  children: [
+                    _InfoTile(
+                      icon: Icons.email_outlined,
+                      title: 'Email',
+                      subtitle: _text(profile['email'], '-'),
+                    ),
+                    _InfoTile(
+                      icon: Icons.phone_iphone_rounded,
+                      title: 'Nomor HP',
+                      subtitle: _text(
+                        profile['phone'],
+                        _text(freelancer['no_telepon'], '-'),
+                      ),
+                    ),
+                    _InfoTile(
+                      icon: Icons.notes_outlined,
+                      title: 'Deskripsi',
+                      subtitle: _text(
+                        profile['bio'],
+                        _text(freelancer['deskripsi'], '-'),
+                      ),
+                    ),
+                    _InfoTile(
+                      icon: Icons.verified_user_outlined,
+                      title: 'Status',
+                      subtitle: _text(freelancer['status'], '-'),
+                      trailing: const Icon(
+                        Icons.check_circle_rounded,
+                        color: Color(0xFF059669),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const FreelancerEarningsScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.savings_rounded),
+                  label: const Text('Lihat Pendapatan'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AuthFlowPalette.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => _handleLogout(context),
+                  icon: const Icon(Icons.logout_rounded),
+                  label: const Text('Logout'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFDC2626),
+                    side: const BorderSide(color: Color(0xFFFECACA)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: () => _handleLogout(context),
-            icon: const Icon(Icons.logout_rounded),
-            label: const Text('Logout'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFFDC2626),
-              side: const BorderSide(color: Color(0xFFFECACA)),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
+  }
+
+  static String _text(dynamic value, String fallback) {
+    final text = value?.toString().trim();
+    if (text == null || text.isEmpty || text == '-') return fallback;
+    return text;
+  }
+
+  static List<String> _splitItems(String? raw,
+      {required List<String> fallback}) {
+    final items = (raw ?? '')
+        .split(',')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
+    return items.isEmpty ? fallback : items;
+  }
+
+  static String _rupiah(dynamic value) {
+    final amount = double.tryParse(value?.toString() ?? '')?.round() ?? 0;
+    if (amount == 0) return 'Rp0';
+    final text = amount.toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      final reverseIndex = text.length - i;
+      buffer.write(text[i]);
+      if (reverseIndex > 1 && reverseIndex % 3 == 1) {
+        buffer.write('.');
+      }
+    }
+    return 'Rp$buffer';
   }
 
   static Future<void> _handleLogout(BuildContext context) async {
@@ -179,25 +252,28 @@ class FreelancerProfileScreen extends StatelessWidget {
 }
 
 class _FreelancerHero extends StatelessWidget {
-  _FreelancerHero();
+  final Map<String, dynamic> profile;
 
-  final SessionService _sessionService = SessionService();
+  const _FreelancerHero({required this.profile});
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<AppUser?>(
-      future: _sessionService.getSession(),
-      builder: (context, snapshot) {
-        final user = snapshot.data;
-        final displayName = user?.fullName.isNotEmpty == true
-            ? user!.fullName
-            : 'Freelancer'
-                .toUpperCase();
-        final subtitle = user?.username.isNotEmpty == true
-            ? '@${user!.username}'
-            : 'Full Stack Developer';
+    final freelancer = profile['freelancer'] is Map
+        ? Map<String, dynamic>.from(profile['freelancer'] as Map)
+        : const <String, dynamic>{};
+    final displayName = profile['name']?.toString() ??
+        freelancer['nama_lengkap']?.toString() ??
+        'Freelancer';
+    final subtitle = profile['skill']?.toString() ??
+        freelancer['keahlian']?.toString() ??
+        'Umum';
+    final rating = freelancer['rating']?.toString() ?? '0';
+    final experience = freelancer['pengalaman_tahun']?.toString() ?? '0';
+    final rate = _FreelancerProfileScreenState._rupiah(
+      freelancer['harga_per_hari'],
+    );
 
-        return Container(
+    return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: AuthFlowPalette.backgroundGradient,
@@ -278,68 +354,57 @@ class _FreelancerHero extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          const Wrap(
+          Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              _HeroBadge(icon: Icons.star_rounded, label: '4.9 rating'),
-              _HeroBadge(icon: Icons.work_rounded, label: '12 proyek'),
-              _HeroBadge(icon: Icons.payments_rounded, label: 'Rp2,4 jt'),
+              _HeroBadge(icon: Icons.star_rounded, label: '$rating rating'),
+              _HeroBadge(icon: Icons.work_rounded, label: '$experience tahun'),
+              _HeroBadge(icon: Icons.payments_rounded, label: rate),
             ],
           ),
         ],
       ),
     );
-      },
-    );
-  }
-}
-
-class _ReadinessCard extends StatelessWidget {
-  const _ReadinessCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _InfoPanel(
-      children: [
-        _ProgressTile(
-          title: 'Profile strength 82%',
-          subtitle: 'Tambahkan portfolio terbaru.',
-          progress: 0.82,
-        ),
-      ],
-    );
   }
 }
 
 class _FreelancerStats extends StatelessWidget {
-  const _FreelancerStats();
+  final String rating;
+  final String experience;
+  final String rate;
+
+  const _FreelancerStats({
+    required this.rating,
+    required this.experience,
+    required this.rate,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: [
         Expanded(
           child: _StatCard(
-            value: '98%',
-            label: 'Tepat waktu',
-            icon: Icons.schedule_rounded,
+            value: rating,
+            label: 'Rating',
+            icon: Icons.star_rounded,
           ),
         ),
-        SizedBox(width: 10),
+        const SizedBox(width: 10),
         Expanded(
           child: _StatCard(
-            value: '7',
-            label: 'Aktif',
-            icon: Icons.assignment_turned_in_rounded,
+            value: experience,
+            label: 'Pengalaman',
+            icon: Icons.timeline_rounded,
           ),
         ),
-        SizedBox(width: 10),
+        const SizedBox(width: 10),
         Expanded(
           child: _StatCard(
-            value: '1h',
-            label: 'Respons',
-            icon: Icons.bolt_rounded,
+            value: rate,
+            label: 'Per hari',
+            icon: Icons.payments_rounded,
           ),
         ),
       ],
@@ -510,77 +575,6 @@ class _InfoTile extends StatelessWidget {
             const SizedBox(width: 10),
             trailing!,
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _ProgressTile extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final double progress;
-
-  const _ProgressTile({
-    required this.title,
-    required this.subtitle,
-    required this.progress,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: AuthFlowPalette.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.workspace_premium_rounded,
-                  color: AuthFlowPalette.primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: AuthFlowPalette.textPrimary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              minHeight: 8,
-              value: progress,
-              backgroundColor: const Color(0xFFE2E8F0),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AuthFlowPalette.primary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              color: AuthFlowPalette.textSecondary,
-              height: 1.45,
-            ),
-          ),
         ],
       ),
     );

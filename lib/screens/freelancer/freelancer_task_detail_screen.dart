@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../models/task_models.dart';
+import '../../services/api_service.dart';
+import '../../services/session_service.dart';
+import '../shared/file_preview_screen.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/status_badge.dart';
 import 'freelancer_offer_form_screen.dart';
@@ -21,6 +24,7 @@ class FreelancerTaskDetailScreen extends StatefulWidget {
 class _FreelancerTaskDetailScreenState
     extends State<FreelancerTaskDetailScreen> {
   SubmittedOfferViewData? _submittedOffer;
+  bool _isOpeningAttachment = false;
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +92,13 @@ class _FreelancerTaskDetailScreenState
                 _DetailRow(label: 'Client', value: task.clientName),
                 _DetailRow(label: 'Lokasi', value: task.location),
                 _DetailRow(label: 'Diposting', value: task.postedLabel),
+                if (task.attachmentName != null &&
+                    task.attachmentName!.isNotEmpty)
+                  _AttachmentRow(
+                    fileName: task.attachmentName!,
+                    isLoading: _isOpeningAttachment,
+                    onOpen: _openAttachment,
+                  ),
                 _DetailRow(
                     label: 'Peminat',
                     value: '${task.applicantsCount} freelancer',
@@ -146,6 +157,41 @@ class _FreelancerTaskDetailScreenState
         ],
       ),
     );
+  }
+
+  Future<void> _openAttachment() async {
+    if (_isOpeningAttachment) return;
+
+    setState(() => _isOpeningAttachment = true);
+    try {
+      final session = await SessionService().getSession();
+      final token = session?.token;
+      if (token == null || token.isEmpty) {
+        throw ApiException('Sesi login tidak ditemukan. Silakan login ulang.');
+      }
+
+      final bytes = await ApiService().getBytes(
+        '/projects/${widget.task.id}/attachment-file',
+        token: token,
+      );
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FilePreviewScreen(
+            fileName: widget.task.attachmentName!,
+            bytes: bytes,
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _isOpeningAttachment = false);
+    }
   }
 }
 
@@ -356,6 +402,69 @@ class _DetailRow extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 height: 1.5,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AttachmentRow extends StatelessWidget {
+  final String fileName;
+  final bool isLoading;
+  final VoidCallback onOpen;
+
+  const _AttachmentRow({
+    required this.fileName,
+    required this.isLoading,
+    required this.onOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(
+            width: 120,
+            child: Text(
+              'Lampiran',
+              style: TextStyle(
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              fileName,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFF0F172A),
+                fontWeight: FontWeight.w700,
+                height: 1.5,
+              ),
+            ),
+          ),
+          TextButton.icon(
+            onPressed: isLoading ? null : onOpen,
+            icon: isLoading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.visibility_rounded, size: 18),
+            label: Text(isLoading ? 'Membuka' : 'Buka'),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF059669),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(72, 40),
             ),
           ),
         ],

@@ -327,6 +327,8 @@ class AvailableTask {
   final int applicantsCount;
   final String budgetRangeLabel;
   final String location;
+  final String? attachmentName;
+  final String? attachmentUrl;
 
   const AvailableTask({
     required this.id,
@@ -341,6 +343,8 @@ class AvailableTask {
     required this.applicantsCount,
     required this.budgetRangeLabel,
     required this.location,
+    this.attachmentName,
+    this.attachmentUrl,
   });
 
   factory AvailableTask.fromJson(Map<String, dynamic> json) {
@@ -382,6 +386,10 @@ class AvailableTask {
               ])}'),
       location: _stringValue(data, ['location', 'place'],
           _stringValue(_asMap(data['client']), ['alamat'], 'Online')),
+      attachmentName: _stringValue(
+          data, ['attachmentName', 'attachment_file_name', 'attachment_file']),
+      attachmentUrl:
+          _stringValue(data, ['attachmentUrl', 'attachment_file_url']),
     );
   }
 }

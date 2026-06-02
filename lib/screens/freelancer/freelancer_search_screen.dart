@@ -359,6 +359,8 @@ class _ProjectCard extends StatelessWidget {
       budgetRangeLabel:
           '${formatRupiah(minBudget)} - ${formatRupiah(maxBudget)}',
       location: project.client?.alamat ?? 'Online',
+      attachmentName: project.attachmentFileName ?? project.attachmentFile,
+      attachmentUrl: project.attachmentFileUrl,
     );
   }
 }

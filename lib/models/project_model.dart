@@ -13,6 +13,9 @@ class ProjectModel {
   final int? anggaranMax;
   final DateTime? deadline;
   final String? status;
+  final String? attachmentFile;
+  final String? attachmentFileName;
+  final String? attachmentFileUrl;
   final ClientModel? client;
   final CategoryModel? kategori;
   final List<BidModel>? bids;
@@ -37,6 +40,9 @@ class ProjectModel {
     this.anggaranMax,
     this.deadline,
     this.status,
+    this.attachmentFile,
+    this.attachmentFileName,
+    this.attachmentFileUrl,
     this.client,
     this.kategori,
     this.bids,
@@ -80,6 +86,9 @@ class ProjectModel {
           : null,
       deadline: parsedDeadline,
       status: json['status'] as String?,
+      attachmentFile: json['attachment_file'] as String?,
+      attachmentFileName: json['attachment_file_name'] as String?,
+      attachmentFileUrl: json['attachment_file_url'] as String?,
       client: json['client'] != null
           ? ClientModel.fromJson(Map<String, dynamic>.from(json['client']))
           : null,
@@ -119,6 +128,9 @@ class ProjectModel {
       'anggaran_max': anggaranMax,
       'deadline': deadline?.toIso8601String(),
       'status': status,
+      'attachment_file': attachmentFile,
+      'attachment_file_name': attachmentFileName,
+      'attachment_file_url': attachmentFileUrl,
       'client': client?.toJson(),
       'kategori': kategori?.toJson(),
       'bids': bids?.map((b) => b.toJson()).toList(),

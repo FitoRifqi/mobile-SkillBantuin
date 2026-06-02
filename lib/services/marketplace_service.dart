@@ -114,24 +114,32 @@ class MarketplaceService {
     required int categoryId,
     required int budget,
     required DateTime deadline,
+    String? attachmentFilePath,
   }) async {
     if (budget < 1000 || budget > 99998000) {
       throw ApiException('Budget harus di antara Rp1.000 dan Rp99.998.000.');
     }
 
     final token = await _getToken();
-    final response = await _apiService.post(
-      '/projects',
-      token: token,
-      body: {
-        'judul': title,
-        'deskripsi': description,
-        'kategori_id': categoryId,
-        'anggaran_min': budget,
-        'anggaran_max': budget + 1000,
-        'deadline': deadline.toIso8601String().split('T').first,
-      },
-    );
+    final body = {
+      'judul': title,
+      'deskripsi': description,
+      'kategori_id': categoryId,
+      'anggaran_min': budget,
+      'anggaran_max': budget + 1000,
+      'deadline': deadline.toIso8601String().split('T').first,
+    };
+    final response = attachmentFilePath == null
+        ? await _apiService.post('/projects', token: token, body: body)
+        : await _apiService.postMultipart(
+            '/projects',
+            token: token,
+            fileField: 'attachment_file',
+            filePath: attachmentFilePath,
+            fields: body.map(
+              (key, value) => MapEntry(key, value.toString()),
+            ),
+          );
     if (response is Map && response['project'] is Map) {
       return Map<String, dynamic>.from(response['project'] as Map);
     }

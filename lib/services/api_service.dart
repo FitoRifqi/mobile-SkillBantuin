@@ -66,6 +66,23 @@ class ApiService {
     return _parseResponse(response);
   }
 
+  Future<List<int>> getBytes(
+    String path, {
+    String? token,
+  }) async {
+    final uri = Uri.parse('$_baseUrl$path');
+    final response = await _client.get(
+      uri,
+      headers: _buildDownloadHeaders(token),
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return response.bodyBytes;
+    }
+
+    return _parseResponse(response) as List<int>;
+  }
+
   Map<String, String> _buildHeaders(String? token) {
     final headers = <String, String>{
       'Content-Type': 'application/json',
@@ -87,10 +104,32 @@ class ApiService {
     return headers;
   }
 
+  Map<String, String> _buildDownloadHeaders(String? token) {
+    final headers = <String, String>{
+      'Accept': '*/*',
+    };
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
+  }
+
   dynamic _parseResponse(http.Response response) {
-    final body = response.body.isNotEmpty
-        ? jsonDecode(response.body)
-        : <String, dynamic>{};
+    final dynamic body;
+    try {
+      body = response.body.isNotEmpty
+          ? jsonDecode(response.body)
+          : <String, dynamic>{};
+    } on FormatException {
+      final preview = response.body.trim();
+      final isHtml = preview.startsWith('<!DOCTYPE') ||
+          preview.startsWith('<html') ||
+          preview.startsWith('<HTML');
+      final message = isHtml
+          ? 'Server membalas HTML, bukan JSON. Cek ukuran file upload atau error Laravel/Nginx. Status: ${response.statusCode}.'
+          : 'Response server tidak valid. Status: ${response.statusCode}.';
+      throw ApiException(message);
+    }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return body;
@@ -99,10 +138,16 @@ class ApiService {
     final message = (body is Map && body['message'] != null)
         ? body['message']
         : (body is Map && body['errors'] is Map)
-            ? (body['errors'] as Map).values.first.toString()
+            ? _firstValidationError(body['errors'] as Map)
             : 'Terjadi kesalahan jaringan. Silakan coba lagi.';
 
     throw ApiException(message.toString());
+  }
+
+  String _firstValidationError(Map errors) {
+    final first = errors.values.isEmpty ? null : errors.values.first;
+    if (first is List && first.isNotEmpty) return first.first.toString();
+    return first?.toString() ?? 'Data yang dikirim belum valid.';
   }
 }
 

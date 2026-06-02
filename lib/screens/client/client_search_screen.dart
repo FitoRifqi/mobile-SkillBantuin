@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/category_model.dart';
@@ -23,6 +24,7 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
   final _locationController = TextEditingController();
   final _attachmentController = TextEditingController();
   final _marketplaceService = MarketplaceService();
+  String? _selectedAttachmentPath;
 
   String? _selectedCategory;
   int? _selectedCategoryId;
@@ -338,9 +340,38 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
     });
   }
 
-  void _pickAttachment() {
+  Future<void> _pickAttachment() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: false,
+      withData: false,
+    );
+
+    if (!mounted || result == null || result.files.isEmpty) return;
+
+    final file = result.files.single;
+    if (file.path == null || file.path!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('File ini belum bisa dibaca dari perangkat.'),
+        ),
+      );
+      return;
+    }
+
+    const maxAttachmentSize = 20 * 1024 * 1024;
+    if (file.size > maxAttachmentSize) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Lampiran maksimal 20 MB. Pilih file yang lebih kecil.'),
+        ),
+      );
+      return;
+    }
+
     setState(() {
-      _attachmentController.text = 'brief-tugas-client.pdf';
+      _selectedAttachmentPath = file.path;
+      _attachmentController.text = file.name;
     });
   }
 
@@ -368,6 +399,7 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
         categoryId: categoryId,
         budget: int.tryParse(_budgetController.text.trim()) ?? 0,
         deadline: _selectedDeadline!,
+        attachmentFilePath: _selectedAttachmentPath,
       );
       final project = ProjectModel.fromJson(projectJson);
       final task = _projectToClientTask(project);
@@ -423,7 +455,7 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
           ? _locationController.text.trim()
           : null,
       attachmentName: _attachmentController.text.isEmpty
-          ? null
+          ? (project.attachmentFileName ?? project.attachmentFile)
           : _attachmentController.text,
     );
   }

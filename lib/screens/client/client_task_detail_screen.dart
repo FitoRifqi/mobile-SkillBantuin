@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../models/task_models.dart';
 import '../../models/workflow_results.dart';
+import '../../services/api_service.dart';
+import '../../services/session_service.dart';
+import '../shared/file_preview_screen.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/auth_flow_widgets.dart';
 import '../../widgets/status_badge.dart';
@@ -9,13 +12,22 @@ import 'client_offers_screen.dart';
 import 'client_payment_screen.dart';
 import 'client_review_screen.dart';
 
-class ClientTaskDetailScreen extends StatelessWidget {
+class ClientTaskDetailScreen extends StatefulWidget {
   final ClientTask task;
 
   const ClientTaskDetailScreen({
     super.key,
     required this.task,
   });
+
+  @override
+  State<ClientTaskDetailScreen> createState() => _ClientTaskDetailScreenState();
+}
+
+class _ClientTaskDetailScreenState extends State<ClientTaskDetailScreen> {
+  bool _isOpeningResultFile = false;
+
+  ClientTask get task => widget.task;
 
   @override
   Widget build(BuildContext context) {
@@ -192,7 +204,11 @@ class ClientTaskDetailScreen extends StatelessWidget {
       child: Column(
         children: [
           if (task.resultFileName != null && task.resultFileName!.isNotEmpty)
-            _buildRow('File hasil', task.resultFileName!),
+            _ResultFileRow(
+              fileName: task.resultFileName!,
+              isLoading: _isOpeningResultFile,
+              onOpen: _openResultFile,
+            ),
           if (task.resultLink != null && task.resultLink!.isNotEmpty)
             _buildRow('Link hasil', task.resultLink!),
           if (task.resultNote != null && task.resultNote!.isNotEmpty)
@@ -379,6 +395,104 @@ class ClientTaskDetailScreen extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 height: 1.5,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openResultFile() async {
+    if (_isOpeningResultFile) return;
+
+    setState(() => _isOpeningResultFile = true);
+    try {
+      final session = await SessionService().getSession();
+      final token = session?.token;
+      if (token == null || token.isEmpty) {
+        throw ApiException('Sesi login tidak ditemukan. Silakan login ulang.');
+      }
+
+      final bytes = await ApiService().getBytes(
+        '/projects/${task.id}/result-file',
+        token: token,
+      );
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FilePreviewScreen(
+            fileName: task.resultFileName!,
+            bytes: bytes,
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _isOpeningResultFile = false);
+    }
+  }
+}
+
+class _ResultFileRow extends StatelessWidget {
+  final String fileName;
+  final bool isLoading;
+  final VoidCallback onOpen;
+
+  const _ResultFileRow({
+    required this.fileName,
+    required this.isLoading,
+    required this.onOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(
+            width: 124,
+            child: Text(
+              'File hasil',
+              style: TextStyle(
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              fileName,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFF0F172A),
+                fontWeight: FontWeight.w700,
+                height: 1.5,
+              ),
+            ),
+          ),
+          TextButton.icon(
+            onPressed: isLoading ? null : onOpen,
+            icon: isLoading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.visibility_rounded, size: 18),
+            label: Text(isLoading ? 'Membuka' : 'Buka'),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF059669),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(72, 40),
             ),
           ),
         ],

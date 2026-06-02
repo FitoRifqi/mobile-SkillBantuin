@@ -400,6 +400,7 @@ class _ActiveProjectCard extends StatelessWidget {
       nearestAction: _projectNearestAction(project.status),
       progress: mappedStatus == TaskStatus.onProgress ? 50 : 20,
       offers: const [],
+      attachmentName: project.attachmentFileName ?? project.attachmentFile,
       resultFileName: project.resultFileName ?? project.resultFile,
       resultFileUrl: project.resultFileUrl,
       resultLink: project.resultLink,

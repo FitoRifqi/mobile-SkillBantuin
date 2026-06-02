@@ -23,7 +23,7 @@ class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProjectProvider>().fetchProjects();
+      context.read<ProjectProvider>().fetchProjects(params: {'status': 'open'});
     });
   }
 
@@ -89,7 +89,8 @@ class _FreelancerSearchScreenState extends State<FreelancerSearchScreen> {
                         const SizedBox(height: 24),
                         ElevatedButton.icon(
                           onPressed: () {
-                            projectProvider.fetchProjects();
+                            projectProvider
+                                .fetchProjects(params: {'status': 'open'});
                           },
                           icon: const Icon(Icons.refresh_rounded),
                           label: const Text('Coba Lagi'),
@@ -308,8 +309,8 @@ class _ProjectCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  final shouldRefresh = await Navigator.push<bool>(
                     context,
                     MaterialPageRoute(
                       builder: (_) => FreelancerTaskDetailScreen(
@@ -317,7 +318,17 @@ class _ProjectCard extends StatelessWidget {
                       ),
                     ),
                   );
+                  if (shouldRefresh == true && context.mounted) {
+                    context
+                        .read<ProjectProvider>()
+                        .fetchProjects(params: {'status': 'open'});
+                  }
                 },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(88, 44),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
                 child: const Text('Detail'),
               ),
             ],

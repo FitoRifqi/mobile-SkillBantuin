@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/category_model.dart';
+import '../../models/project_model.dart';
 import '../../models/task_models.dart';
 import '../../providers/project_provider.dart';
 import '../../services/marketplace_service.dart';
@@ -24,10 +25,11 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
   final _marketplaceService = MarketplaceService();
 
   String? _selectedCategory;
-  List<CategoryModel> _categories = const [];
-  bool _isLoadingCategories = true;
+  int? _selectedCategoryId;
   DateTime? _selectedDeadline;
   AssistanceType _assistanceType = AssistanceType.online;
+  List<CategoryModel> _categories = const [];
+  bool _isLoadingCategories = true;
   bool _isSubmitting = false;
 
   @override
@@ -54,34 +56,14 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
       final categories = await _marketplaceService.fetchCategories();
       if (!mounted) return;
       setState(() {
-        _categories = categories;
-        _selectedCategory ??=
-            categories.isNotEmpty ? categories.first.namaKategori : null;
+        _categories =
+            categories.where((category) => category.id != null).toList();
         _isLoadingCategories = false;
       });
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       setState(() => _isLoadingCategories = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memuat kategori: $error')),
-      );
     }
-  }
-
-  List<String> _buildCategoryOptions(ProjectProvider provider) {
-    final apiCategories = _categories
-        .map((category) => category.namaKategori)
-        .whereType<String>()
-        .where((value) => value.isNotEmpty)
-        .toSet();
-    if (apiCategories.isNotEmpty) return apiCategories.toList();
-
-    return provider.projects
-        .map((project) => project.kategori?.namaKategori)
-        .whereType<String>()
-        .where((value) => value.isNotEmpty)
-        .toSet()
-        .toList();
   }
 
   @override
@@ -92,8 +74,6 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
       ),
       body: Consumer<ProjectProvider>(
         builder: (context, provider, child) {
-          final categories = _buildCategoryOptions(provider);
-
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -177,17 +157,23 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
                         hint: Text(_isLoadingCategories
                             ? 'Memuat kategori...'
                             : 'Pilih kategori skill'),
-                        items: categories
+                        items: _categories
                             .map(
                               (category) => DropdownMenuItem(
-                                value: category,
-                                child: Text(category),
+                                value: category.id.toString(),
+                                child:
+                                    Text(category.namaKategori ?? 'Kategori'),
                               ),
                             )
                             .toList(),
                         onChanged: (value) {
+                          final selected = _categories.firstWhere(
+                            (category) => category.id.toString() == value,
+                            orElse: () => CategoryModel(),
+                          );
                           setState(() {
                             _selectedCategory = value;
+                            _selectedCategoryId = selected.id;
                           });
                         },
                         validator: (value) {
@@ -229,16 +215,6 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Budget awal tidak boleh kosong';
-                          }
-                          final budget = int.tryParse(value.trim());
-                          if (budget == null) {
-                            return 'Budget harus berupa angka';
-                          }
-                          if (budget < 1000) {
-                            return 'Budget minimal Rp1.000';
-                          }
-                          if (budget > 99998000) {
-                            return 'Budget maksimal Rp99.998.000';
                           }
                           return null;
                         },
@@ -376,74 +352,39 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
       );
       return;
     }
-
-    final provider = context.read<ProjectProvider>();
-    final selectedCategory = _categories
-        .where((category) => category.namaKategori == _selectedCategory)
-        .toList();
-    final matchedProjects = provider.projects
-        .where((project) => project.kategori?.namaKategori == _selectedCategory)
-        .toList();
-    final categoryId = selectedCategory.isNotEmpty
-        ? selectedCategory.first.id
-        : matchedProjects.isNotEmpty
-            ? matchedProjects.first.kategoriId
-            : null;
+    final categoryId = _selectedCategoryId;
     if (categoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Kategori belum tersedia dari Laravel. Coba refresh.'),
-        ),
+        const SnackBar(content: Text('Pilih kategori terlebih dahulu.')),
       );
       return;
     }
-    final budget = int.tryParse(_budgetController.text.trim()) ?? 0;
 
     setState(() => _isSubmitting = true);
     try {
-      final createdProject = await _marketplaceService.createProject(
+      final projectJson = await _marketplaceService.createProject(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         categoryId: categoryId,
-        budget: budget,
+        budget: int.tryParse(_budgetController.text.trim()) ?? 0,
         deadline: _selectedDeadline!,
       );
+      final project = ProjectModel.fromJson(projectJson);
+      final task = _projectToClientTask(project);
+
       if (!mounted) return;
-      provider.fetchMyProjects();
-
-      final newTask = ClientTask(
-        id: createdProject['id']?.toString() ??
-            'draft-task-${DateTime.now().millisecondsSinceEpoch}',
-        title: _titleController.text.trim(),
-        category: _selectedCategory ?? 'Kategori tidak diketahui',
-        description: _descriptionController.text.trim(),
-        initialBudget: budget,
-        deadlineLabel:
-            '${_selectedDeadline!.day}/${_selectedDeadline!.month}/${_selectedDeadline!.year}',
-        createdAtLabel: 'Hari ini',
-        status: TaskStatus.waitingOffer,
-        paymentStatus: PaymentStatus.unpaid,
-        assistanceType: _assistanceType,
-        nearestAction: 'Menunggu freelancer mengirim penawaran',
-        progress: 10,
-        offers: const [],
-        location: _assistanceType == AssistanceType.offline
-            ? _locationController.text.trim()
-            : null,
-        attachmentName: _attachmentController.text.isEmpty
-            ? null
-            : _attachmentController.text,
-      );
-
-      Navigator.push(
+      context.read<ProjectProvider>().fetchMyProjects();
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => ClientTaskDetailScreen(task: newTask),
+          builder: (_) => ClientTaskDetailScreen(task: task),
         ),
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bantuan berhasil dibuat di Laravel.')),
+        const SnackBar(
+          content: Text('Bantuan berhasil dibuat di Laravel.'),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -453,5 +394,37 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  ClientTask _projectToClientTask(ProjectModel project) {
+    final selectedCategory = _categories.firstWhere(
+      (category) => category.id == project.kategoriId,
+      orElse: () => CategoryModel(namaKategori: 'Kategori tidak diketahui'),
+    );
+    return ClientTask(
+      id: project.id?.toString() ?? '',
+      title: project.judul ?? _titleController.text.trim(),
+      category: project.kategori?.namaKategori ??
+          selectedCategory.namaKategori ??
+          'Kategori tidak diketahui',
+      description: project.deskripsi ?? _descriptionController.text.trim(),
+      initialBudget: project.anggaranMin ?? 0,
+      agreedBudget: project.anggaranMax,
+      deadlineLabel:
+          '${_selectedDeadline!.day}/${_selectedDeadline!.month}/${_selectedDeadline!.year}',
+      createdAtLabel: 'Hari ini',
+      status: TaskStatus.waitingOffer,
+      paymentStatus: PaymentStatus.unpaid,
+      assistanceType: _assistanceType,
+      nearestAction: 'Menunggu freelancer mengirim penawaran',
+      progress: 10,
+      offers: const [],
+      location: _assistanceType == AssistanceType.offline
+          ? _locationController.text.trim()
+          : null,
+      attachmentName: _attachmentController.text.isEmpty
+          ? null
+          : _attachmentController.text,
+    );
   }
 }

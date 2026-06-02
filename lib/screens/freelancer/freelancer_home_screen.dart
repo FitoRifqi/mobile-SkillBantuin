@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/task_models.dart';
 import '../../models/user_role.dart';
+import '../../models/project_model.dart';
+import '../../models/task_models.dart';
 import '../../providers/project_provider.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/auth_flow_widgets.dart';
@@ -24,7 +25,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProjectProvider>().fetchProjects();
+      context.read<ProjectProvider>().fetchProjects(params: {'status': 'open'});
     });
   }
 
@@ -185,7 +186,7 @@ class _FreelancerHomeScreenState extends State<FreelancerHomeScreen> {
 }
 
 class _RecommendedProjectCard extends StatelessWidget {
-  final dynamic data;
+  final ProjectModel data;
 
   const _RecommendedProjectCard({required this.data});
 
@@ -195,11 +196,10 @@ class _RecommendedProjectCard extends StatelessWidget {
     final kategoriNama = data.kategori?.namaKategori ?? 'Umum';
     final clientNama = data.client?.namaKontak ?? 'Client';
     final anggaran = data.anggaranMin ?? 0;
+    final anggaranMax = data.anggaranMax;
     final deadline = data.deadline;
-    final deskripsi = data.deskripsi ?? '';
-
-    final budgetLabel = (data.anggaranMax != null)
-        ? '${formatRupiah(anggaran)} - ${formatRupiah(data.anggaranMax)}'
+    final budgetLabel = (anggaranMax != null)
+        ? '${formatRupiah(anggaran)} - ${formatRupiah(anggaranMax)}'
         : formatRupiah(anggaran);
 
     final deadlineLabel = deadline != null
@@ -262,32 +262,28 @@ class _RecommendedProjectCard extends StatelessWidget {
               _LiteChip(icon: Icons.flash_on_rounded, label: budgetLabel),
               _LiteChip(icon: Icons.schedule_rounded, label: deadlineLabel),
               _LiteChip(
-                icon: Icons.access_time_rounded,
-                label: 'Status: ${data.status}',
-              ),
+                  icon: Icons.access_time_rounded,
+                  label: 'Status: ${data.status}'),
             ],
           ),
           const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerRight,
             child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                final shouldRefresh = await Navigator.push<bool>(
                   context,
                   MaterialPageRoute(
                     builder: (_) => FreelancerTaskDetailScreen(
-                      task: _projectToAvailableTask(
-                        judul: judul,
-                        kategoriNama: kategoriNama,
-                        clientNama: clientNama,
-                        anggaranMin: anggaran,
-                        anggaranMax: data.anggaranMax,
-                        deadline: deadline,
-                        deskripsi: deskripsi,
-                      ),
+                      task: _projectToAvailableTask(data),
                     ),
                   ),
                 );
+                if (shouldRefresh == true && context.mounted) {
+                  context
+                      .read<ProjectProvider>()
+                      .fetchProjects(params: {'status': 'open'});
+                }
               },
               icon: const Icon(Icons.send_rounded, size: 18),
               label: const Text('Lihat Detail'),
@@ -298,32 +294,27 @@ class _RecommendedProjectCard extends StatelessWidget {
     );
   }
 
-  AvailableTask _projectToAvailableTask({
-    required String judul,
-    required String kategoriNama,
-    required String clientNama,
-    required int anggaranMin,
-    required int? anggaranMax,
-    required DateTime? deadline,
-    required String deskripsi,
-  }) {
-    final maxBudget = anggaranMax ?? anggaranMin;
+  AvailableTask _projectToAvailableTask(ProjectModel project) {
+    final minBudget = project.anggaranMin ?? 0;
+    final maxBudget = project.anggaranMax ?? minBudget;
     return AvailableTask(
-      id: data.id?.toString() ?? '',
-      title: judul,
-      category: kategoriNama,
-      description: deskripsi,
+      id: project.id?.toString() ?? '',
+      title: project.judul ?? 'Untitled',
+      category: project.kategori?.namaKategori ?? 'Umum',
+      description: project.deskripsi ?? '',
       initialBudget: maxBudget,
-      deadlineLabel: deadline != null
-          ? 'dalam ${deadline.difference(DateTime.now()).inDays} hari'
+      deadlineLabel: project.deadline != null
+          ? '${project.deadline!.difference(DateTime.now()).inDays} hari'
           : 'TBD',
       assistanceType: AssistanceType.online,
-      clientName: clientNama,
+      clientName: project.client?.namaKontak ??
+          project.client?.namaPerusahaan ??
+          'Client',
       postedLabel: 'Terbaru',
-      applicantsCount: data.offers?.length ?? data.bids?.length ?? 0,
+      applicantsCount: project.offers?.length ?? project.bids?.length ?? 0,
       budgetRangeLabel:
-          '${formatRupiah(anggaranMin)} - ${formatRupiah(maxBudget)}',
-      location: data.client?.alamat ?? 'Online',
+          '${formatRupiah(minBudget)} - ${formatRupiah(maxBudget)}',
+      location: project.client?.alamat ?? 'Online',
     );
   }
 }

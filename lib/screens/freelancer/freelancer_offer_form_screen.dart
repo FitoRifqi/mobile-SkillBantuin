@@ -196,7 +196,14 @@ class _FreelancerOfferFormScreenState extends State<FreelancerOfferFormScreen> {
           content: Text('Penawaran berhasil dikirim ke Laravel.'),
         ),
       );
-      Navigator.pop(context, true);
+      Navigator.pop(
+        context,
+        SubmittedOfferViewData(
+          offeredBudget: int.parse(_budgetController.text.trim()),
+          deadlineDays: _parseDeadlineDays(_deadlineController.text),
+          message: _messageController.text.trim(),
+        ),
+      );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -211,4 +218,16 @@ class _FreelancerOfferFormScreenState extends State<FreelancerOfferFormScreen> {
     final match = RegExp(r'\d+').firstMatch(raw);
     return int.tryParse(match?.group(0) ?? '') ?? 1;
   }
+}
+
+class SubmittedOfferViewData {
+  final int offeredBudget;
+  final int deadlineDays;
+  final String message;
+
+  const SubmittedOfferViewData({
+    required this.offeredBudget,
+    required this.deadlineDays,
+    required this.message,
+  });
 }

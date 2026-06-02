@@ -1,36 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../../models/app_user.dart';
 import '../../models/user_role.dart';
 import '../../services/auth_service.dart';
-import '../../services/marketplace_service.dart';
+import '../../services/session_service.dart';
 import '../../widgets/auth_flow_widgets.dart';
 import '../role_selection_screen.dart';
 import '../shared/edit_profile_screen.dart';
 import '../shared/notification_screen.dart';
 
-class ClientProfileScreen extends StatefulWidget {
+class ClientProfileScreen extends StatelessWidget {
   const ClientProfileScreen({super.key});
 
-  @override
-  State<ClientProfileScreen> createState() => _ClientProfileScreenState();
-}
-
-class _ClientProfileScreenState extends State<ClientProfileScreen> {
   static final AuthService _authService = AuthService();
-  final MarketplaceService _marketplaceService = MarketplaceService();
-  late Future<Map<String, dynamic>> _profileFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _profileFuture = _marketplaceService.fetchProfile();
-  }
-
-  void _refreshProfile() {
-    setState(() {
-      _profileFuture = _marketplaceService.fetchProfile();
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,151 +37,115 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
           IconButton(
             tooltip: 'Edit profil',
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () async {
-              await Navigator.push(
+            onPressed: () {
+              Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) =>
                       const EditProfileScreen(userRole: UserRole.client),
                 ),
               );
-              if (mounted) _refreshProfile();
             },
           ),
         ],
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _profileFuture,
-        builder: (context, snapshot) {
-          final profile = snapshot.data ?? const <String, dynamic>{};
-          final client = profile['client'] is Map
-              ? Map<String, dynamic>.from(profile['client'] as Map)
-              : const <String, dynamic>{};
-          final projectCount = client['total_proyek']?.toString() ?? '0';
-
-          return RefreshIndicator(
-            onRefresh: () async => _refreshProfile(),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
-              children: [
-                _ClientProfileHero(profile: profile),
-                const SizedBox(height: 16),
-                const _ProfileCompletionCard(),
-                const SizedBox(height: 16),
-                _ClientInsightGrid(projectCount: projectCount),
-                const SizedBox(height: 18),
-                const _SectionTitle(
-                  title: 'Informasi Client',
-                  subtitle: 'Info yang dilihat freelancer.',
-                ),
-                const SizedBox(height: 10),
-                _InfoPanel(
-                  children: [
-                    _InfoTile(
-                      icon: Icons.email_outlined,
-                      title: 'Email',
-                      subtitle: _text(profile['email'], '-'),
-                    ),
-                    _InfoTile(
-                      icon: Icons.phone_iphone_rounded,
-                      title: 'Nomor HP',
-                      subtitle: _text(
-                        profile['phone'],
-                        _text(client['no_telepon'], '-'),
-                      ),
-                    ),
-                    _InfoTile(
-                      icon: Icons.business_center_outlined,
-                      title: 'Bidang',
-                      subtitle: _text(client['bidang_usaha'],
-                          profile['company']?.toString() ?? '-'),
-                    ),
-                    _InfoTile(
-                      icon: Icons.location_on_outlined,
-                      title: 'Lokasi',
-                      subtitle: _text(client['alamat'], '-'),
-                    ),
-                    _InfoTile(
-                      icon: Icons.calendar_today_outlined,
-                      title: 'Bergabung',
-                      subtitle: _dateText(profile['created_at']),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                const _SectionTitle(
-                  title: 'Pembayaran',
-                  subtitle: 'Transaksi client diproses aman lewat Midtrans.',
-                ),
-                const SizedBox(height: 10),
-                const _InfoPanel(
-                  children: [
-                    _InfoTile(
-                      icon: Icons.account_balance_wallet_outlined,
-                      title: 'Midtrans Snap',
-                      subtitle:
-                          'QRIS, e-wallet, virtual account, dan m-banking',
-                      trailing: _StatusPill(label: 'Aktif'),
-                    ),
-                    _InfoTile(
-                      icon: Icons.percent_rounded,
-                      title: 'Platform fee',
-                      subtitle: '5% dari nilai jasa setiap transaksi',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                const _SectionTitle(
-                  title: 'Keamanan & Preferensi',
-                  subtitle: 'Atur keamanan akun.',
-                ),
-                const SizedBox(height: 10),
-                const _InfoPanel(
-                  children: [
-                    _InfoTile(
-                      icon: Icons.verified_user_outlined,
-                      title: 'Verifikasi email',
-                      subtitle: 'Sudah aktif',
-                      trailing: Icon(Icons.check_circle_rounded,
-                          color: Color(0xFF059669)),
-                    ),
-                    _InfoTile(
-                      icon: Icons.notifications_none_rounded,
-                      title: 'Notifikasi',
-                      subtitle: 'Deadline dan penawaran aktif',
-                      trailing: Icon(Icons.chevron_right_rounded),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                OutlinedButton.icon(
-                  onPressed: () => _handleLogout(context),
-                  icon: const Icon(Icons.logout_rounded),
-                  label: const Text('Logout'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFDC2626),
-                    side: const BorderSide(color: Color(0xFFFECACA)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
-              ],
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
+        children: [
+          _ClientProfileHero(),
+          const SizedBox(height: 16),
+          const _ProfileCompletionCard(),
+          const SizedBox(height: 16),
+          const _ClientInsightGrid(),
+          const SizedBox(height: 18),
+          const _SectionTitle(
+            title: 'Informasi Client',
+            subtitle: 'Info yang dilihat freelancer.',
+          ),
+          const SizedBox(height: 10),
+          const _InfoPanel(
+            children: [
+              _InfoTile(
+                icon: Icons.business_center_outlined,
+                title: 'Bidang',
+                subtitle: 'Teknologi Informasi',
+              ),
+              _InfoTile(
+                icon: Icons.location_on_outlined,
+                title: 'Lokasi',
+                subtitle: 'Jakarta, Indonesia',
+              ),
+              _InfoTile(
+                icon: Icons.calendar_today_outlined,
+                title: 'Bergabung',
+                subtitle: 'Januari 2024',
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          const _SectionTitle(
+            title: 'Pembayaran',
+            subtitle: 'Transaksi client diproses aman lewat Midtrans.',
+          ),
+          const SizedBox(height: 10),
+          const _InfoPanel(
+            children: [
+              _InfoTile(
+                icon: Icons.account_balance_wallet_outlined,
+                title: 'Midtrans Snap',
+                subtitle: 'QRIS, e-wallet, virtual account, dan m-banking',
+                trailing: _StatusPill(label: 'Aktif'),
+              ),
+              _InfoTile(
+                icon: Icons.percent_rounded,
+                title: 'Platform fee',
+                subtitle: '5% dari nilai jasa setiap transaksi',
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          const _SectionTitle(
+            title: 'Keamanan & Preferensi',
+            subtitle: 'Atur keamanan akun.',
+          ),
+          const SizedBox(height: 10),
+          const _InfoPanel(
+            children: [
+              _InfoTile(
+                icon: Icons.verified_user_outlined,
+                title: 'Verifikasi email',
+                subtitle: 'Sudah aktif',
+                trailing:
+                    Icon(Icons.check_circle_rounded, color: Color(0xFF059669)),
+              ),
+              _InfoTile(
+                icon: Icons.phone_iphone_rounded,
+                title: 'Nomor HP',
+                subtitle: 'Perlu diperbarui',
+                trailing: Icon(Icons.chevron_right_rounded),
+              ),
+              _InfoTile(
+                icon: Icons.notifications_none_rounded,
+                title: 'Notifikasi',
+                subtitle: 'Deadline dan penawaran aktif',
+                trailing: Icon(Icons.chevron_right_rounded),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          OutlinedButton.icon(
+            onPressed: () => _handleLogout(context),
+            icon: const Icon(Icons.logout_rounded),
+            label: const Text('Logout'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFDC2626),
+              side: const BorderSide(color: Color(0xFFFECACA)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
-  }
-
-  static String _text(dynamic value, String fallback) {
-    final text = value?.toString().trim();
-    if (text == null || text.isEmpty || text == '-') return fallback;
-    return text;
-  }
-
-  static String _dateText(dynamic value) {
-    final parsed = DateTime.tryParse(value?.toString() ?? '');
-    if (parsed == null) return '-';
-    return '${parsed.day}/${parsed.month}/${parsed.year}';
   }
 
   static Future<void> _handleLogout(BuildContext context) async {
@@ -214,113 +160,114 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
 }
 
 class _ClientProfileHero extends StatelessWidget {
-  const _ClientProfileHero({required this.profile});
+  _ClientProfileHero();
 
-  final Map<String, dynamic> profile;
+  final SessionService _sessionService = SessionService();
 
   @override
   Widget build(BuildContext context) {
-    final client = profile['client'] is Map
-        ? Map<String, dynamic>.from(profile['client'] as Map)
-        : const <String, dynamic>{};
-    final displayName = profile['name']?.toString() ??
-        client['nama_perusahaan']?.toString() ??
-        'Client';
-    final email =
-        profile['email']?.toString() ?? client['email']?.toString() ?? '-';
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AuthFlowPalette.backgroundGradient,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AuthFlowPalette.primary.withValues(alpha: 0.22),
-            blurRadius: 26,
-            offset: const Offset(0, 14),
+    return FutureBuilder<AppUser?>(
+      future: _sessionService.getSession(),
+      builder: (context, snapshot) {
+        final user = snapshot.data;
+        final displayName = user?.fullName.isNotEmpty == true
+            ? user!.fullName
+            : 'PT Maju Bersama';
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: AuthFlowPalette.backgroundGradient,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: AuthFlowPalette.primary.withValues(alpha: 0.22),
+                blurRadius: 26,
+                offset: const Offset(0, 14),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 78,
-                height: 78,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(24),
-                  border:
-                      Border.all(color: Colors.white.withValues(alpha: 0.24)),
-                ),
-                child: const Icon(
-                  Icons.apartment_rounded,
-                  color: Colors.white,
-                  size: 38,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 78,
+                    height: 78,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.24)),
+                    ),
+                    child: const Icon(
+                      Icons.apartment_rounded,
+                      color: Colors.white,
+                      size: 38,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            displayName,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              height: 1.15,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                displayName,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.15,
+                                ),
+                              ),
                             ),
-                          ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: const Icon(
+                                Icons.verified_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: const Icon(
-                            Icons.verified_rounded,
-                            color: Colors.white,
-                            size: 18,
+                        const SizedBox(height: 6),
+                        Text(
+                          'info@majubersama.com',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.78),
+                            height: 1.4,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      email,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.78),
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _HeroBadge(icon: Icons.star_rounded, label: '4.8 rating'),
+                  _HeroBadge(icon: Icons.task_alt_rounded, label: '12 proyek'),
+                  _HeroBadge(
+                      icon: Icons.flash_on_rounded, label: 'Fast response'),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          const Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _HeroBadge(icon: Icons.star_rounded, label: '4.8 rating'),
-              _HeroBadge(icon: Icons.task_alt_rounded, label: '12 proyek'),
-              _HeroBadge(icon: Icons.flash_on_rounded, label: 'Fast response'),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -343,31 +290,29 @@ class _ProfileCompletionCard extends StatelessWidget {
 }
 
 class _ClientInsightGrid extends StatelessWidget {
-  final String projectCount;
-
-  const _ClientInsightGrid({required this.projectCount});
+  const _ClientInsightGrid();
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return const Row(
       children: [
         Expanded(
           child: _StatCard(
-            value: projectCount,
+            value: '12',
             label: 'Proyek',
             icon: Icons.assignment_outlined,
           ),
         ),
-        const SizedBox(width: 10),
-        const Expanded(
+        SizedBox(width: 10),
+        Expanded(
           child: _StatCard(
             value: '9',
             label: 'Selesai',
             icon: Icons.done_all_rounded,
           ),
         ),
-        const SizedBox(width: 10),
-        const Expanded(
+        SizedBox(width: 10),
+        Expanded(
           child: _StatCard(
             value: '4.8',
             label: 'Rating',

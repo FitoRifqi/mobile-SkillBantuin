@@ -379,6 +379,10 @@ class _ActiveProjectCard extends StatelessWidget {
   static ClientTask _projectToClientTask(ProjectModel project) {
     final mappedStatus = _projectStatusToTaskStatus(project.status);
     final deadline = project.deadline;
+    final assignedFreelancer = project.offers?.isNotEmpty == true
+        ? project.offers!.first.freelancer?.namaLengkap
+        : null;
+
     return ClientTask(
       id: project.id?.toString() ?? '',
       title: project.judul ?? 'Judul tidak tersedia',
@@ -401,7 +405,7 @@ class _ActiveProjectCard extends StatelessWidget {
       resultLink: project.resultLink,
       resultNote: project.resultNote,
       resultSubmittedAt: project.resultSubmittedAt,
-      assignedFreelancer: project.offers?.first.freelancer?.namaLengkap,
+      assignedFreelancer: assignedFreelancer,
     );
   }
 }

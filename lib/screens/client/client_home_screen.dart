@@ -319,17 +319,22 @@ class _ActiveProjectCard extends StatelessWidget {
 
   static String _projectNearestAction(String? status) {
     final normalized = status?.toLowerCase() ?? '';
-    if (normalized.contains('open') || normalized.contains('waiting')) {
-      return 'Menunggu freelancer mengajukan penawaran';
+    if (normalized.contains('payment')) {
+      if (normalized.contains('verified') ||
+          normalized.contains('success') ||
+          normalized.contains('paid')) {
+        return 'Pembayaran berhasil. Menunggu hasil dari freelancer';
+      }
+      return 'Selesaikan pembayaran untuk memulai';
+    }
+    if (normalized.contains('progress')) {
+      return 'Pembayaran berhasil. Menunggu hasil dari freelancer';
     }
     if (normalized.contains('negotiation')) {
       return 'Negosiasi penawaran freelancer';
     }
-    if (normalized.contains('payment')) {
-      return 'Selesaikan pembayaran untuk memulai';
-    }
-    if (normalized.contains('progress')) {
-      return 'Lihat progres terbaru dari freelancer';
+    if (normalized.contains('open') || normalized.contains('waiting')) {
+      return 'Menunggu freelancer mengajukan penawaran';
     }
     if (normalized.contains('submitted')) {
       return 'Tinjau hasil pekerjaan yang dikirim';
@@ -393,9 +398,7 @@ class _ActiveProjectCard extends StatelessWidget {
       deadlineLabel: _projectDeadlineLabel(deadline),
       createdAtLabel: 'Baru saja',
       status: mappedStatus,
-      paymentStatus: mappedStatus == TaskStatus.waitingPayment
-          ? PaymentStatus.pending
-          : PaymentStatus.unpaid,
+      paymentStatus: _paymentStatusFromTaskStatus(mappedStatus),
       assistanceType: AssistanceType.online,
       nearestAction: _projectNearestAction(project.status),
       progress: mappedStatus == TaskStatus.onProgress ? 50 : 20,
@@ -408,6 +411,25 @@ class _ActiveProjectCard extends StatelessWidget {
       resultSubmittedAt: project.resultSubmittedAt,
       assignedFreelancer: assignedFreelancer,
     );
+  }
+
+  static PaymentStatus _paymentStatusFromTaskStatus(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.waitingPayment:
+        return PaymentStatus.pending;
+      case TaskStatus.paymentVerified:
+      case TaskStatus.onProgress:
+      case TaskStatus.submitted:
+      case TaskStatus.completed:
+        return PaymentStatus.verified;
+      case TaskStatus.cancelled:
+        return PaymentStatus.failed;
+      case TaskStatus.open:
+      case TaskStatus.waitingOffer:
+      case TaskStatus.negotiation:
+      case TaskStatus.overdue:
+        return PaymentStatus.unpaid;
+    }
   }
 }
 

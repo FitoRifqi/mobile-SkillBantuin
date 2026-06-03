@@ -26,8 +26,21 @@ class ClientTaskDetailScreen extends StatefulWidget {
 
 class _ClientTaskDetailScreenState extends State<ClientTaskDetailScreen> {
   bool _isOpeningResultFile = false;
+  TaskStatus? _statusOverride;
+  PaymentStatus? _paymentStatusOverride;
 
   ClientTask get task => widget.task;
+  TaskStatus get _currentStatus => _statusOverride ?? task.status;
+  PaymentStatus get _currentPaymentStatus =>
+      _paymentStatusOverride ?? task.paymentStatus;
+  bool get _isWaitingForFreelancerResult =>
+      _currentStatus == TaskStatus.paymentVerified ||
+      _currentStatus == TaskStatus.onProgress;
+  bool get _shouldShowOffers =>
+      _currentStatus == TaskStatus.open ||
+      _currentStatus == TaskStatus.waitingOffer ||
+      _currentStatus == TaskStatus.negotiation ||
+      _currentStatus == TaskStatus.waitingPayment;
 
   @override
   Widget build(BuildContext context) {
@@ -48,8 +61,14 @@ class _ClientTaskDetailScreenState extends State<ClientTaskDetailScreen> {
             _buildResultCard(),
             const SizedBox(height: 16),
           ],
-          _buildOfferPreview(context),
-          const SizedBox(height: 16),
+          if (_shouldShowOffers) ...[
+            _buildOfferPreview(context),
+            const SizedBox(height: 16),
+          ],
+          if (_isWaitingForFreelancerResult) ...[
+            _buildWaitingResultCard(),
+            const SizedBox(height: 16),
+          ],
           _buildActionPanel(context),
         ],
       ),
@@ -105,14 +124,14 @@ class _ClientTaskDetailScreenState extends State<ClientTaskDetailScreen> {
   }
 
   int get _stepIndex {
-    switch (task.status) {
+    switch (_currentStatus) {
       case TaskStatus.open:
       case TaskStatus.waitingOffer:
       case TaskStatus.negotiation:
         return 0;
       case TaskStatus.waitingPayment:
-      case TaskStatus.paymentVerified:
         return 1;
+      case TaskStatus.paymentVerified:
       case TaskStatus.onProgress:
         return 2;
       case TaskStatus.submitted:
@@ -138,7 +157,7 @@ class _ClientTaskDetailScreenState extends State<ClientTaskDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           StatusBadge(
-            label: taskStatusLabel(task.status),
+            label: taskStatusLabel(_currentStatus),
             color: Colors.white,
           ),
           const SizedBox(height: 14),
@@ -183,13 +202,29 @@ class _ClientTaskDetailScreenState extends State<ClientTaskDetailScreen> {
           if (task.attachmentName != null)
             _buildRow('Lampiran', task.attachmentName!),
           _buildRow(
-              'Status pembayaran', paymentStatusLabel(task.paymentStatus)),
+              'Status pembayaran', paymentStatusLabel(_currentPaymentStatus)),
           _buildRow(
               'Freelancer terpilih', task.assignedFreelancer ?? 'Belum ada'),
-          _buildRow('Aksi terdekat', task.nearestAction, isLast: true),
+          _buildRow('Aksi terdekat', _nearestActionLabel, isLast: true),
         ],
       ),
     );
+  }
+
+  String get _nearestActionLabel {
+    if (_currentStatus == TaskStatus.onProgress) {
+      return 'Menunggu freelancer mengirim hasil pekerjaan';
+    }
+    if (_currentStatus == TaskStatus.paymentVerified) {
+      return 'Pembayaran berhasil. Menunggu freelancer mengirim hasil pekerjaan';
+    }
+    if (_currentStatus == TaskStatus.submitted) {
+      return 'Tinjau hasil pekerjaan dan beri review';
+    }
+    if (_currentStatus == TaskStatus.completed) {
+      return 'Tugas sudah selesai';
+    }
+    return task.nearestAction;
   }
 
   bool get _hasSubmittedResult {
@@ -294,27 +329,85 @@ class _ClientTaskDetailScreenState extends State<ClientTaskDetailScreen> {
     );
   }
 
+  Widget _buildWaitingResultCard() {
+    return _SectionCard(
+      title: 'Menunggu Hasil Freelancer',
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFECFDF5),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFA7F3D0)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: const Color(0xFF059669).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.work_history_rounded,
+                color: Color(0xFF059669),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Pembayaran sudah berhasil. Freelancer sudah bisa mulai mengerjakan tugas dan mengirim hasil dari menu Pekerjaan.',
+                style: TextStyle(
+                  color: Color(0xFF047857),
+                  height: 1.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildActionPanel(BuildContext context) {
+    if (_isWaitingForFreelancerResult) {
+      return const _SectionCard(
+        title: 'Status Berikutnya',
+        child: Text(
+          'Menunggu freelancer mengupload hasil pekerjaan. Setelah hasil dikirim, tombol review akan tersedia di halaman ini.',
+          style: TextStyle(
+            color: Color(0xFF64748B),
+            height: 1.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    }
+
     return _SectionCard(
       title: 'Aksi Cepat',
       child: Wrap(
         spacing: 10,
         runSpacing: 10,
         children: [
-          ElevatedButton.icon(
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ClientOffersScreen(task: task),
-                ),
-              );
-            },
-            icon: const Icon(Icons.groups_rounded, size: 18),
-            label: const Text('Daftar Penawaran'),
-          ),
+          if (_shouldShowOffers)
+            ElevatedButton.icon(
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ClientOffersScreen(task: task),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.groups_rounded, size: 18),
+              label: const Text('Daftar Penawaran'),
+            ),
           OutlinedButton.icon(
-            onPressed: task.status == TaskStatus.waitingPayment
+            onPressed: _currentStatus == TaskStatus.waitingPayment
                 ? () async {
                     final result =
                         await Navigator.push<PaymentSubmissionResult>(
@@ -324,6 +417,12 @@ class _ClientTaskDetailScreenState extends State<ClientTaskDetailScreen> {
                       ),
                     );
                     if (result != null && context.mounted) {
+                      if (result.paymentStatus == PaymentStatus.verified) {
+                        setState(() {
+                          _statusOverride = TaskStatus.onProgress;
+                          _paymentStatusOverride = PaymentStatus.verified;
+                        });
+                      }
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
@@ -340,8 +439,8 @@ class _ClientTaskDetailScreenState extends State<ClientTaskDetailScreen> {
             label: const Text('Bayar via Midtrans'),
           ),
           OutlinedButton.icon(
-            onPressed: task.status == TaskStatus.completed ||
-                    task.status == TaskStatus.submitted
+            onPressed: _currentStatus == TaskStatus.completed ||
+                    _currentStatus == TaskStatus.submitted
                 ? () async {
                     final result = await Navigator.push<ReviewSubmissionResult>(
                       context,
@@ -362,7 +461,7 @@ class _ClientTaskDetailScreenState extends State<ClientTaskDetailScreen> {
                 : null,
             icon: const Icon(Icons.star_outline_rounded, size: 18),
             label: Text(
-              task.status == TaskStatus.submitted
+              _currentStatus == TaskStatus.submitted
                   ? 'Terima Hasil & Review'
                   : 'Review',
             ),

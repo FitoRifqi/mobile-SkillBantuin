@@ -60,6 +60,8 @@ String offerStatusLabel(OfferStatus status) {
       return 'Ditolak';
     case OfferStatus.countered:
       return 'Ditawar Balik';
+    case OfferStatus.counterAccepted:
+      return 'Tawaran Disetujui';
   }
 }
 
@@ -73,6 +75,8 @@ Color offerStatusColor(OfferStatus status) {
       return const Color(0xFFDC2626);
     case OfferStatus.countered:
       return const Color(0xFF16A34A);
+    case OfferStatus.counterAccepted:
+      return const Color(0xFF059669);
   }
 }
 

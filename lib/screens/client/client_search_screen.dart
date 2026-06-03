@@ -406,7 +406,7 @@ class _ClientSearchScreenState extends State<ClientSearchScreen> {
 
       if (!mounted) return;
       context.read<ProjectProvider>().fetchMyProjects();
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => ClientTaskDetailScreen(task: task),

@@ -219,6 +219,30 @@ class MarketplaceService {
     await _apiService.put('/offers/$offerId/reject', token: token);
   }
 
+  Future<void> counterOffer({
+    required String offerId,
+    required int offeredBudget,
+    required String message,
+    int? proposedDeadlineDays,
+  }) async {
+    final token = await _getToken();
+    await _apiService.put(
+      '/offers/$offerId/counter',
+      token: token,
+      body: {
+        'offered_budget': offeredBudget,
+        'message': message,
+        if (proposedDeadlineDays != null)
+          'proposed_deadline_days': proposedDeadlineDays,
+      },
+    );
+  }
+
+  Future<void> acceptCounterOffer(String offerId) async {
+    final token = await _getToken();
+    await _apiService.put('/offers/$offerId/accept-counter', token: token);
+  }
+
   Future<List<ChatMessageModel>> fetchChats(String projectId) async {
     final token = await _getToken();
     final response = await _apiService.get('/chats/$projectId', token: token);

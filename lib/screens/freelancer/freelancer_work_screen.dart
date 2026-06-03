@@ -168,7 +168,8 @@ class _FreelancerWorkScreenState extends State<FreelancerWorkScreen> {
                 return const AppEmptyState(
                   icon: Icons.inbox_outlined,
                   title: 'Pekerjaan tidak ditemukan',
-                  message: 'Pekerjaan akan muncul setelah penawaran diterima.',
+                  message:
+                      'Pekerjaan aktif muncul setelah penawaran diterima dan pembayaran client selesai.',
                 );
               }
 
@@ -210,6 +211,11 @@ class _WorkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final workStatus = _workStatusFromOffer(item);
+    final canUpload = workStatus == WorkStatus.inProgress ||
+        workStatus == WorkStatus.overdue;
+    final isWaitingPayment = _isWaitingPayment(item);
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -253,11 +259,46 @@ class _WorkCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               StatusBadge(
-                label: workStatusLabel(_workStatusFromOffer(item)),
-                color: workStatusColor(_workStatusFromOffer(item)),
+                label: isWaitingPayment
+                    ? 'Menunggu Pembayaran'
+                    : workStatusLabel(workStatus),
+                color: isWaitingPayment
+                    ? const Color(0xFFF59E0B)
+                    : workStatusColor(workStatus),
               ),
             ],
           ),
+          if (canUpload) ...[
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFECFDF5),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFA7F3D0)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.play_circle_fill_rounded,
+                    color: Color(0xFF059669),
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Pembayaran sudah diterima. Kamu bisa mulai mengerjakan tugas ini.',
+                      style: TextStyle(
+                        color: Color(0xFF047857),
+                        fontWeight: FontWeight.w800,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
           Text(
             _nextStepFromOffer(item),
@@ -301,32 +342,53 @@ class _WorkCard extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: ElevatedButton.icon(
-              onPressed: () async {
-                final result = await Navigator.push<WorkSubmissionResult>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => FreelancerUploadResultScreen(
-                      item: _toWorkItem(item),
-                    ),
-                  ),
-                );
-                if (result != null && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Hasil dikirim. Menunggu review client.',
-                      ),
-                    ),
-                  );
-                }
-              },
-              icon: const Icon(Icons.upload_file_rounded, size: 18),
-              label: const Text('Upload Hasil'),
+              onPressed: canUpload
+                  ? () async {
+                      final result =
+                          await Navigator.push<WorkSubmissionResult>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => FreelancerUploadResultScreen(
+                            item: _toWorkItem(item),
+                          ),
+                        ),
+                      );
+                      if (result != null && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Hasil dikirim. Menunggu review client.',
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  : null,
+              icon: Icon(
+                canUpload
+                    ? Icons.upload_file_rounded
+                    : Icons.hourglass_top_rounded,
+                size: 18,
+              ),
+              label: Text(
+                canUpload
+                    ? 'Upload Hasil'
+                    : isWaitingPayment
+                        ? 'Menunggu Pembayaran'
+                        : 'Belum Bisa Upload',
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  bool _isWaitingPayment(OfferModel item) {
+    final status = item.project?.status?.toLowerCase();
+    return item.status == 'accepted' &&
+        status != 'in_progress' &&
+        status != 'completed';
   }
 
   String _deadlineLabel(OfferModel item) {
@@ -337,6 +399,10 @@ class _WorkCard extends StatelessWidget {
   }
 
   String _nextStepFromOffer(OfferModel item) {
+    if (_isWaitingPayment(item)) {
+      return 'Penawaran diterima. Menunggu client menyelesaikan pembayaran sebelum tugas bisa dikerjakan.';
+    }
+
     final status = _workStatusFromOffer(item);
     switch (status) {
       case WorkStatus.notStarted:
@@ -369,14 +435,21 @@ class _WorkCard extends StatelessWidget {
 }
 
 WorkStatus _workStatusFromOffer(OfferModel item) {
+  final projectStatus = item.project?.status?.toLowerCase();
+  if (projectStatus == 'completed') {
+    return WorkStatus.completed;
+  }
+
+  if (projectStatus != 'in_progress' && projectStatus != 'completed') {
+    return WorkStatus.notStarted;
+  }
+
   final deadline = item.project?.deadline;
   if (deadline != null && deadline.isBefore(DateTime.now())) {
     return WorkStatus.overdue;
   }
 
-  switch (item.project?.status) {
-    case 'completed':
-      return WorkStatus.completed;
+  switch (projectStatus) {
     case 'in_progress':
       return WorkStatus.inProgress;
     default:

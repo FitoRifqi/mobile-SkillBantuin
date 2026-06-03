@@ -16,6 +16,7 @@ enum OfferStatus {
   accepted,
   rejected,
   countered,
+  counterAccepted,
 }
 
 enum WorkStatus {
@@ -70,9 +71,9 @@ double _doubleValue(Map<String, dynamic> data, List<String> keys,
 
 T _enumValue<T>(Map<String, dynamic> data, List<String> keys, List<T> values,
     String Function(T) name, T defaultValue) {
-  final raw = _stringValue(data, keys).toLowerCase();
+  final raw = _stringValue(data, keys).toLowerCase().replaceAll('_', '');
   for (final value in values) {
-    if (name(value).toLowerCase() == raw) {
+    if (name(value).toLowerCase().replaceAll('_', '') == raw) {
       return value;
     }
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../models/chat_models.dart';
 import '../../models/task_models.dart';
@@ -150,20 +151,37 @@ class _TaskSummaryCard extends StatelessWidget {
   }
 }
 
-class _OfferCard extends StatelessWidget {
+class _OfferCard extends StatefulWidget {
   final ClientTask task;
   final VolunteerOffer offer;
   final VoidCallback onChanged;
-  final MarketplaceService _marketplaceService = MarketplaceService();
 
-  _OfferCard({
+  const _OfferCard({
     required this.task,
     required this.offer,
     required this.onChanged,
   });
 
   @override
+  State<_OfferCard> createState() => _OfferCardState();
+}
+
+class _OfferCardState extends State<_OfferCard> {
+  final MarketplaceService _marketplaceService = MarketplaceService();
+  bool _isProcessing = false;
+
+  ClientTask get task => widget.task;
+  VolunteerOffer get offer => widget.offer;
+  VoidCallback get onChanged => widget.onChanged;
+
+  @override
   Widget build(BuildContext context) {
+    final isWaitingFreelancerApproval = offer.status == OfferStatus.countered;
+    final canAcceptAndPay = offer.status == OfferStatus.pending ||
+        offer.status == OfferStatus.accepted ||
+        offer.status == OfferStatus.counterAccepted;
+    final isActionDisabled = _isProcessing || !canAcceptAndPay;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -285,9 +303,10 @@ class _OfferCard extends StatelessWidget {
                 label: const Text('Chat'),
               ),
               ElevatedButton.icon(
-                onPressed: offer.status == OfferStatus.rejected
+                onPressed: isActionDisabled
                     ? null
                     : () async {
+                        setState(() => _isProcessing = true);
                         final canContinue =
                             offer.status == OfferStatus.accepted ||
                                 await _runOfferAction(
@@ -296,6 +315,9 @@ class _OfferCard extends StatelessWidget {
                                       _marketplaceService.acceptOffer(offer.id),
                                   'Penawaran ${offer.freelancerName} diterima.',
                                 );
+                        if (mounted) {
+                          setState(() => _isProcessing = false);
+                        }
                         if (!canContinue) return;
                         if (!context.mounted) return;
                         final result =
@@ -318,23 +340,46 @@ class _OfferCard extends StatelessWidget {
                           );
                         }
                       },
-                icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
-                label: const Text('Terima & Bayar'),
+                icon: _isProcessing
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check_circle_outline_rounded, size: 18),
+                label: Text(
+                  _isProcessing
+                      ? 'Memproses...'
+                      : isWaitingFreelancerApproval
+                          ? 'Menunggu Freelancer'
+                          : 'Terima & Bayar',
+                ),
               ),
               OutlinedButton(
-                onPressed: () => _runOfferAction(
-                  context,
-                  () => _marketplaceService.rejectOffer(offer.id),
-                  'Penawaran ${offer.freelancerName} ditolak.',
-                ),
+                onPressed: _isProcessing ||
+                        !(offer.status == OfferStatus.pending ||
+                            offer.status == OfferStatus.countered ||
+                            offer.status == OfferStatus.counterAccepted)
+                    ? null
+                    : () async {
+                        setState(() => _isProcessing = true);
+                        await _runOfferAction(
+                          context,
+                          () => _marketplaceService.rejectOffer(offer.id),
+                          'Penawaran ${offer.freelancerName} ditolak.',
+                        );
+                        if (mounted) {
+                          setState(() => _isProcessing = false);
+                        }
+                      },
                 child: const Text('Tolak'),
               ),
               TextButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Tawar balik lewat chat.')),
-                  );
-                },
+                onPressed: _isProcessing ||
+                        !(offer.status == OfferStatus.pending ||
+                            offer.status == OfferStatus.countered)
+                    ? null
+                    : () => _showCounterOfferDialog(context),
                 child: const Text('Tawar Balik'),
               ),
             ],
@@ -364,6 +409,177 @@ class _OfferCard extends StatelessWidget {
       );
       return false;
     }
+  }
+
+  Future<void> _showCounterOfferDialog(BuildContext context) async {
+    final result = await showDialog<_CounterOfferPayload>(
+      context: context,
+      builder: (_) => _CounterOfferDialog(
+        initialBudget: offer.offeredBudget,
+        initialDeadlineDays: _deadlineDaysFromLabel(offer.proposedDeadline),
+      ),
+    );
+
+    if (result == null || !context.mounted) return;
+
+    setState(() => _isProcessing = true);
+    await _runOfferAction(
+      context,
+      () => _marketplaceService.counterOffer(
+        offerId: offer.id,
+        offeredBudget: result.offeredBudget,
+        proposedDeadlineDays: result.proposedDeadlineDays,
+        message: result.message,
+      ),
+      'Tawar balik berhasil dikirim ke ${offer.freelancerName}.',
+    );
+    if (mounted) {
+      setState(() => _isProcessing = false);
+    }
+  }
+
+  int _deadlineDaysFromLabel(String label) {
+    final match = RegExp(r'\d+').firstMatch(label);
+    return int.tryParse(match?.group(0) ?? '') ?? 1;
+  }
+}
+
+class _CounterOfferPayload {
+  final int offeredBudget;
+  final int proposedDeadlineDays;
+  final String message;
+
+  const _CounterOfferPayload({
+    required this.offeredBudget,
+    required this.proposedDeadlineDays,
+    required this.message,
+  });
+}
+
+class _CounterOfferDialog extends StatefulWidget {
+  final int initialBudget;
+  final int initialDeadlineDays;
+
+  const _CounterOfferDialog({
+    required this.initialBudget,
+    required this.initialDeadlineDays,
+  });
+
+  @override
+  State<_CounterOfferDialog> createState() => _CounterOfferDialogState();
+}
+
+class _CounterOfferDialogState extends State<_CounterOfferDialog> {
+  late final TextEditingController _budgetController;
+  late final TextEditingController _deadlineController;
+  late final TextEditingController _messageController;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _budgetController =
+        TextEditingController(text: widget.initialBudget.toString());
+    _deadlineController =
+        TextEditingController(text: widget.initialDeadlineDays.toString());
+    _messageController = TextEditingController(
+      text: 'Saya tawar di ${formatRupiah(widget.initialBudget)}.',
+    );
+  }
+
+  @override
+  void dispose() {
+    _budgetController.dispose();
+    _deadlineController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Tawar Balik'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _budgetController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: const InputDecoration(
+                labelText: 'Harga tawaran',
+                prefixText: 'Rp ',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _deadlineController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: const InputDecoration(
+                labelText: 'Estimasi deadline',
+                suffixText: 'hari',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _messageController,
+              minLines: 3,
+              maxLines: 5,
+              decoration: const InputDecoration(
+                labelText: 'Catatan untuk freelancer',
+              ),
+            ),
+            if (_errorText != null) ...[
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _errorText!,
+                  style: const TextStyle(
+                    color: Color(0xFFDC2626),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Batal'),
+        ),
+        ElevatedButton(
+          onPressed: _submit,
+          child: const Text('Kirim'),
+        ),
+      ],
+    );
+  }
+
+  void _submit() {
+    final budget = int.tryParse(_budgetController.text.trim()) ?? 0;
+    final deadline = int.tryParse(_deadlineController.text.trim()) ?? 0;
+    final message = _messageController.text.trim();
+
+    if (budget < 1000 || deadline < 1 || message.isEmpty) {
+      setState(() {
+        _errorText = 'Isi harga, deadline, dan catatan dulu.';
+      });
+      return;
+    }
+
+    Navigator.pop(
+      context,
+      _CounterOfferPayload(
+        offeredBudget: budget,
+        proposedDeadlineDays: deadline,
+        message: message,
+      ),
+    );
   }
 }
 

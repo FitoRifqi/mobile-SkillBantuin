@@ -122,7 +122,10 @@ class _FreelancerProjectsScreenState extends State<FreelancerProjectsScreen> {
                     .map(
                       (item) => Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: _ApplicationCard(item: item),
+                        child: _ApplicationCard(
+                          item: item,
+                          onChanged: _refreshOffers,
+                        ),
                       ),
                     )
                     .toList(),
@@ -149,15 +152,39 @@ class _FreelancerProjectsScreenState extends State<FreelancerProjectsScreen> {
     ].whereType<String>().map((value) => value.toLowerCase());
     return values.any((value) => value.contains(query));
   }
+
+  void _refreshOffers() {
+    setState(() {
+      _offersFuture = _marketplaceService.fetchMyOffers();
+    });
+  }
 }
 
-class _ApplicationCard extends StatelessWidget {
+class _ApplicationCard extends StatefulWidget {
   final OfferModel item;
+  final VoidCallback onChanged;
 
-  const _ApplicationCard({required this.item});
+  const _ApplicationCard({
+    required this.item,
+    required this.onChanged,
+  });
+
+  @override
+  State<_ApplicationCard> createState() => _ApplicationCardState();
+}
+
+class _ApplicationCardState extends State<_ApplicationCard> {
+  final _marketplaceService = MarketplaceService();
+  bool _isProcessing = false;
+
+  OfferModel get item => widget.item;
 
   @override
   Widget build(BuildContext context) {
+    final offerStatus = _offerStatusFromString(item.status);
+    final isCountered = offerStatus == OfferStatus.countered;
+    final isCounterAccepted = offerStatus == OfferStatus.counterAccepted;
+
     return AppCard(
       padding: const EdgeInsets.all(18),
       child: Column(
@@ -191,8 +218,8 @@ class _ApplicationCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               StatusBadge(
-                label: offerStatusLabel(_offerStatusFromString(item.status)),
-                color: offerStatusColor(_offerStatusFromString(item.status)),
+                label: offerStatusLabel(offerStatus),
+                color: offerStatusColor(offerStatus),
               ),
             ],
           ),
@@ -225,9 +252,94 @@ class _ApplicationCard extends StatelessWidget {
               height: 1.5,
             ),
           ),
+          if (isCountered || isCounterAccepted) ...[
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFECFDF5),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFA7F3D0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isCounterAccepted
+                        ? 'Tawar Balik Sudah Disetujui'
+                        : 'Client Menawar Balik',
+                    style: const TextStyle(
+                      color: Color(0xFF047857),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    isCounterAccepted
+                        ? 'Menunggu client menerima penawaran dan membayar via Midtrans.'
+                        : 'Jika harga dan deadline ini cocok, setujui agar client bisa lanjut menerima dan membayar.',
+                    style: const TextStyle(
+                      color: Color(0xFF475569),
+                      height: 1.4,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (isCountered) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _isProcessing ? null : _acceptCounter,
+                        icon: _isProcessing
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.handshake_outlined, size: 18),
+                        label: Text(
+                          _isProcessing
+                              ? 'Memproses...'
+                              : 'Setujui Tawar Balik',
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  Future<void> _acceptCounter() async {
+    final offerId = item.id?.toString();
+    if (offerId == null || offerId.isEmpty) return;
+
+    setState(() => _isProcessing = true);
+    try {
+      await _marketplaceService.acceptCounterOffer(offerId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tawar balik disetujui. Menunggu client membayar.'),
+        ),
+      );
+      widget.onChanged();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
   }
 }
 
@@ -239,6 +351,8 @@ OfferStatus _offerStatusFromString(String? status) {
       return OfferStatus.rejected;
     case 'countered':
       return OfferStatus.countered;
+    case 'counter_accepted':
+      return OfferStatus.counterAccepted;
     case 'pending':
     default:
       return OfferStatus.pending;

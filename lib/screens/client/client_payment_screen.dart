@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../models/task_models.dart';
-import '../../models/workflow_results.dart';
 import '../../services/marketplace_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/app_ui.dart';
 import '../../widgets/auth_flow_widgets.dart';
+import '../payment_failure_screen.dart';
+import '../payment_success_screen.dart';
+import '../payment_webview_screen.dart';
 
 class ClientPaymentScreen extends StatelessWidget {
   final ClientTask task;
@@ -189,10 +191,35 @@ class ClientPaymentScreen extends StatelessWidget {
     try {
       final payment = await _marketplaceService.createPayment(task.id);
       if (!context.mounted) return;
-      _showMidtransResult(
+
+      // Buka WebView, bukan bottom sheet
+      await Navigator.push(
         context,
-        redirectUrl: payment['redirect_url']?.toString(),
-        orderId: payment['order_id']?.toString(),
+        MaterialPageRoute(
+          builder: (_) => PaymentWebViewScreen(
+            redirectUrl: payment['redirect_url'],
+            orderId: payment['order_id'],
+            onPaymentComplete: (status) {
+              if (status == 'success') {
+                // Navigasi ke halaman sukses
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PaymentSuccessScreen(orderId: payment['order_id']),
+                  ),
+                );
+              } else {
+                // Navigasi ke halaman gagal
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PaymentFailureScreen(),
+                  ),
+                );
+              }
+            },
+          ),
+        ),
       );
     } catch (error) {
       if (!context.mounted) return;
@@ -201,8 +228,8 @@ class ClientPaymentScreen extends StatelessWidget {
       );
     }
   }
-
-  void _showMidtransResult(
+  // Hapus seluruh method _showMidtransResult
+  /*void _showMidtransResult(
     BuildContext context, {
     String? redirectUrl,
     String? orderId,
@@ -269,7 +296,7 @@ class ClientPaymentScreen extends StatelessWidget {
         );
       },
     );
-  }
+  }*/
 }
 
 class _PaymentHero extends StatelessWidget {

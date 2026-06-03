@@ -389,7 +389,7 @@ class _ActiveProjectCard extends StatelessWidget {
       category: project.kategori?.namaKategori ?? 'Kategori lain',
       description: project.deskripsi ?? '',
       initialBudget: project.anggaranMin ?? 0,
-      agreedBudget: project.anggaranMax,
+      agreedBudget: project.agreedBudget,
       deadlineLabel: _projectDeadlineLabel(deadline),
       createdAtLabel: 'Baru saja',
       status: mappedStatus,

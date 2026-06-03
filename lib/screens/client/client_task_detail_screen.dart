@@ -327,7 +327,9 @@ class _ClientTaskDetailScreenState extends State<ClientTaskDetailScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Menunggu pembayaran ${result.paymentMethod}.',
+                            result.paymentStatus == PaymentStatus.verified
+                                ? 'Pembayaran berhasil. Tugas masuk tahap pengerjaan.'
+                                : 'Menunggu pembayaran ${result.paymentMethod}.',
                           ),
                         ),
                       );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/task_models.dart';
+import '../../models/workflow_results.dart';
 import '../../services/marketplace_service.dart';
 import '../../utils/task_ui_utils.dart';
 import '../../widgets/app_ui.dart';
@@ -192,33 +193,59 @@ class ClientPaymentScreen extends StatelessWidget {
       final payment = await _marketplaceService.createPayment(task.id);
       if (!context.mounted) return;
 
-      // Buka WebView, bukan bottom sheet
-      await Navigator.push(
+      final status = await Navigator.push<String>(
         context,
         MaterialPageRoute(
           builder: (_) => PaymentWebViewScreen(
             redirectUrl: payment['redirect_url'],
             orderId: payment['order_id'],
-            onPaymentComplete: (status) {
-              if (status == 'success') {
-                // Navigasi ke halaman sukses
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PaymentSuccessScreen(orderId: payment['order_id']),
-                  ),
-                );
-              } else {
-                // Navigasi ke halaman gagal
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PaymentFailureScreen(),
-                  ),
-                );
-              }
-            },
           ),
+        ),
+      );
+
+      if (!context.mounted || status == null) return;
+
+      if (status == 'success') {
+        final acknowledged = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PaymentSuccessScreen(
+              orderId: payment['order_id'],
+              totalAmount: _totalPayment,
+              paymentMethod: 'Midtrans Sandbox',
+            ),
+          ),
+        );
+
+        if (!context.mounted) return;
+        if (acknowledged == true) {
+          Navigator.pop(
+            context,
+            PaymentSubmissionResult(
+              paymentMethod: 'Midtrans Sandbox',
+              proofFileName: payment['order_id']?.toString() ?? '-',
+              totalAmount: _totalPayment,
+              paymentStatus: PaymentStatus.verified,
+              nextTaskStatus: TaskStatus.onProgress,
+            ),
+          );
+        }
+        return;
+      }
+
+      if (status == 'failed') {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const PaymentFailureScreen(),
+          ),
+        );
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pembayaran masih pending. Cek lagi dari Midtrans.'),
         ),
       );
     } catch (error) {

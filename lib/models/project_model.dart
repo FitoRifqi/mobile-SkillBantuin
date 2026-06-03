@@ -11,6 +11,7 @@ class ProjectModel {
   final String? deskripsi;
   final int? anggaranMin;
   final int? anggaranMax;
+  final int? agreedBudget;
   final DateTime? deadline;
   final String? status;
   final String? attachmentFile;
@@ -38,6 +39,7 @@ class ProjectModel {
     this.deskripsi,
     this.anggaranMin,
     this.anggaranMax,
+    this.agreedBudget,
     this.deadline,
     this.status,
     this.attachmentFile,
@@ -84,6 +86,9 @@ class ProjectModel {
       anggaranMax: json['anggaran_max'] != null
           ? int.tryParse(json['anggaran_max'].toString())
           : null,
+      agreedBudget: json['agreed_budget'] != null
+          ? int.tryParse(json['agreed_budget'].toString())
+          : null,
       deadline: parsedDeadline,
       status: json['status'] as String?,
       attachmentFile: json['attachment_file'] as String?,
@@ -126,6 +131,7 @@ class ProjectModel {
       'deskripsi': deskripsi,
       'anggaran_min': anggaranMin,
       'anggaran_max': anggaranMax,
+      'agreed_budget': agreedBudget,
       'deadline': deadline?.toIso8601String(),
       'status': status,
       'attachment_file': attachmentFile,

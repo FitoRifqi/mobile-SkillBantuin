@@ -141,30 +141,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 SizedBox(height: spacing * 0.8),
                 _buildSelectedRoleCard(),
                 const SizedBox(height: 12),
-                AuthGlassCard(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        color: Colors.white.withValues(alpha: 0.92),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Data akun tersimpan di perangkat ini.',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.78),
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 SizedBox(height: spacing),
                 Container(
                   width: double.infinity,

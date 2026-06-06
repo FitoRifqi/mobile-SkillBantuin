@@ -128,34 +128,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: spacing * 0.8),
                 _buildSelectedRoleCard(),
                 const SizedBox(height: 12),
-                AuthGlassCard(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.tips_and_updates_outlined,
-                        color: Colors.white.withValues(alpha: 0.92),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          isClient
-                              ? 'Contoh akun: clientdemo / demo123'
-                              : 'Contoh akun: freelancerdemo / demo123',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.78),
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 SizedBox(height: spacing),
                 Container(
                   width: double.infinity,
@@ -275,8 +247,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 16),
                         AuthPrimaryButton(
-                          label: authProvider.isLoading ? 'Memproses...' : 'Masuk',
-                          onPressed: authProvider.isLoading ? null : _handleLogin,
+                          label:
+                              authProvider.isLoading ? 'Memproses...' : 'Masuk',
+                          onPressed:
+                              authProvider.isLoading ? null : _handleLogin,
                           trailing: authProvider.isLoading
                               ? const SizedBox(
                                   width: 18,
